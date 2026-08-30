@@ -9,6 +9,7 @@ __pycache__/
 .venv/
 venv/
 .ipynb_checkpoints/
+.pytest_cache/
 
 # Node / frontend
 node_modules/
