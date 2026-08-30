@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/common",
+    "crates/kalshi-client",
+    "crates/orderbook-core",
+    "crates/feature-engine",
+    "crates/collector",
+    "crates/bench-harness",
+]
