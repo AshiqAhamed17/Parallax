@@ -1,0 +1,35 @@
+# Rust
+/target/
+**/target/
+Cargo.lock
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Node / frontend
+node_modules/
+.next/
+dist/
+build/
+
+# Data (do not commit collected market data)
+*.parquet
+*.sqlite
+*.db
+/data/
+
+# Env / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
