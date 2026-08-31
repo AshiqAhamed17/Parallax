@@ -19,9 +19,9 @@ name = "feature-engine"
 version = "0.1.0"
 
 [[package]]
-name = "kalshi-client"
+name = "manifold-client"
 version = "0.1.0"
 
 [[package]]
-name = "orderbook-core"
+name = "probability-engine"
 version = "0.1.0"

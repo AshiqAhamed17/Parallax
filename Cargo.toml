@@ -2,8 +2,8 @@
 resolver = "2"
 members = [
     "crates/common",
-    "crates/kalshi-client",
-    "crates/orderbook-core",
+    "crates/manifold-client",
+    "crates/probability-engine",
     "crates/feature-engine",
     "crates/collector",
     "crates/bench-harness",
