@@ -877,6 +877,9 @@ dependencies = [
 [[package]]
 name = "probability-engine"
 version = "0.1.0"
+dependencies = [
+ "common",
+]
 
 [[package]]
 name = "proc-macro2"

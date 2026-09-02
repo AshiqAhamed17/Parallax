@@ -38,6 +38,32 @@ pub struct MarketState {
     pub last_updated_ns: u64,
 }
 
+impl MarketState {
+    /// A fresh state for `market_id` with no bets applied yet. `current_prob` starts at 0.5 (the
+    /// uninformative prior) and `last_updated_ns` at 0; both are overwritten by the first `apply`.
+    pub fn new(market_id: impl Into<String>) -> Self {
+        Self {
+            market_id: market_id.into(),
+            current_prob: 0.5,
+            last_updated_ns: 0,
+        }
+    }
+
+    /// Applies a bet to this state: the post-bet market-implied probability becomes
+    /// `event.prob_after`, and `last_updated_ns` advances to the event's timestamp.
+    ///
+    /// This is the pure scalar update — it does NOT touch any rolling bet-history buffer, since
+    /// `MarketState` is the compact, serializable snapshot (see `implementation.md` §7). The
+    /// buffer-aware update lives on `probability_engine::MarketTracker::apply`, which calls this.
+    ///
+    /// Assumes events are applied in chronological order (last-write-wins); the collector feeds
+    /// events in receive order and the backtester replays them chronologically, so this holds.
+    pub fn apply(&mut self, event: &BetEvent) {
+        self.current_prob = event.prob_after;
+        self.last_updated_ns = event.ts_ns;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -76,6 +102,38 @@ mod tests {
 
         assert_eq!(event, decoded);
         assert!(decoded.is_limit_order);
+    }
+
+    fn bet(ts_ns: u64, prob_after: f64) -> BetEvent {
+        BetEvent {
+            market_id: "m".to_string(),
+            ts_ns,
+            prob_before: 0.5,
+            prob_after,
+            amount: 10.0,
+            shares: 15.0,
+            is_limit_order: false,
+        }
+    }
+
+    #[test]
+    fn new_market_state_starts_at_uninformative_prior() {
+        let state = MarketState::new("m");
+        assert_eq!(state.current_prob, 0.5);
+        assert_eq!(state.last_updated_ns, 0);
+        assert_eq!(state.market_id, "m");
+    }
+
+    #[test]
+    fn apply_sets_current_prob_to_prob_after_and_advances_timestamp() {
+        let mut state = MarketState::new("m");
+        state.apply(&bet(100, 0.7));
+        assert_eq!(state.current_prob, 0.7);
+        assert_eq!(state.last_updated_ns, 100);
+
+        state.apply(&bet(200, 0.42));
+        assert_eq!(state.current_prob, 0.42);
+        assert_eq!(state.last_updated_ns, 200);
     }
 
     #[test]
