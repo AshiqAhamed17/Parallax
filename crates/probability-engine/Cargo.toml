@@ -5,3 +5,11 @@ edition = "2024"
 
 [dependencies]
 common = { path = "../common" }
+
+[dev-dependencies]
+# manifold-client is a DEV-only dependency: the production engine works purely in `common` types.
+# It's used by the Task 2.7 integration test to parse a captured WS-session fixture and convert
+# wire bets into domain BetEvents, exercising the full wire->domain->engine path offline.
+manifold-client = { path = "../manifold-client" }
+proptest = "1"
+serde_json = "1"

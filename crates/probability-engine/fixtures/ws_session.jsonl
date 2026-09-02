@@ -1,0 +1,4 @@
+{"type":"broadcast","topic":"global/new-bet","data":{"bets":[{"id":"b1","contractId":"m1","createdTime":1000,"probBefore":0.5,"probAfter":0.6,"amount":10,"shares":18,"isFilled":true,"isCancelled":false}]}}
+{"type":"ack","txid":1,"success":true}
+{"type":"broadcast","topic":"global/new-bet","data":{"bets":[{"id":"b2","contractId":"m1","createdTime":2000,"probBefore":0.6,"probAfter":0.55,"amount":-5,"shares":-9,"isFilled":true,"isCancelled":false},{"id":"b3","contractId":"m2","createdTime":2000,"probBefore":0.5,"probAfter":0.2,"amount":30,"shares":50,"isFilled":true,"isCancelled":false}]}}
+{"type":"broadcast","topic":"global/new-bet","data":{"bets":[{"id":"b4","contractId":"m1","createdTime":3000,"probBefore":0.55,"probAfter":0.72,"amount":20,"shares":30,"isFilled":true,"isCancelled":false}]}}

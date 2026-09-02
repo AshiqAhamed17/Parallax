@@ -41,6 +41,15 @@ impl From<RawWsMessage> for ManifoldWsEvent {
     }
 }
 
+/// Parses one raw WebSocket text frame into a `ManifoldWsEvent`, returning `None` for anything
+/// that doesn't match the known ack/broadcast shapes. Exposed so callers (and offline tests that
+/// replay a captured WS session) can parse frames without opening a live connection.
+pub fn parse_ws_text(text: &str) -> Option<ManifoldWsEvent> {
+    serde_json::from_str::<RawWsMessage>(text)
+        .ok()
+        .map(ManifoldWsEvent::from)
+}
+
 /// Tuning knobs for connection health and reconnection. Defaults are based on empirical testing
 /// against the live API (see module docs on `connect_once`) rather than Manifold's documentation,
 /// which doesn't specify this behavior.
@@ -155,8 +164,8 @@ fn connect_once(
                     match msg {
                         Some(Ok(Message::Text(text))) => {
                             last_activity = tokio::time::Instant::now();
-                            if let Ok(raw) = serde_json::from_str::<RawWsMessage>(&text) {
-                                yield ManifoldWsEvent::from(raw);
+                            if let Some(event) = parse_ws_text(&text) {
+                                yield event;
                             }
                         }
                         Some(Ok(_)) => {
