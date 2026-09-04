@@ -278,6 +278,7 @@ name = "feature-engine"
 version = "0.1.0"
 dependencies = [
  "common",
+ "probability-engine",
 ]
 
 [[package]]

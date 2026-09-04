@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 common = { path = "../common" }
+probability-engine = { path = "../probability-engine" }
