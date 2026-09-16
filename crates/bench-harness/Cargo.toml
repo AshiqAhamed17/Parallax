@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+manifold-client = { version = "0.1.0", path = "../manifold-client" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+futures-util = "0.3.34"
+async-stream = "0.3.6"
+clap = { version = "4", features = ["derive"] }
