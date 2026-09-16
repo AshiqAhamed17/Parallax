@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
+quanta = "0.12"
 
 [dev-dependencies]
 serde_json = "1"

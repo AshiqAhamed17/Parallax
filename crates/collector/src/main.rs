@@ -83,9 +83,10 @@ async fn main() {
         args.feature_window_secs * 1_000_000_000,
         args.history_capacity,
         health.clone(),
+        false, // latency timing off in normal operation; the bench harness enables it
     ));
 
-    let writer_task = tokio::spawn(run_writer_loop(rx, conn, health.clone(), args.dry_run));
+    let writer_task = tokio::spawn(run_writer_loop(rx, conn, health.clone(), args.dry_run, None));
 
     let health_task = tokio::spawn(run_health_log_loop(
         health.clone(),

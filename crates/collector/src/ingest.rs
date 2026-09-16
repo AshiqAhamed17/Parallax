@@ -1,19 +1,25 @@
 use crate::health::SharedHealth;
-use common::BetEvent;
+use common::{BetEvent, Stage, StageTimer};
 use feature_engine::{compute_snapshot, FeatureSnapshot};
 use futures_util::{Stream, StreamExt};
 use manifold_client::ManifoldWsEvent;
 use probability_engine::ProbabilityEngine;
+use quanta::Instant;
 use rusqlite::{params, Connection, Result as SqlResult};
 use tokio::sync::mpsc;
 
 /// Everything the writer needs to persist one bet: the domain event, the resulting market
 /// probability, and the feature snapshot computed immediately after applying it.
+///
+/// `timer` carries per-stage latency timestamps (Phase 5). It is `StageTimer::Disabled` in normal
+/// operation (zero-cost) and only enabled when the benchmark harness runs the pipeline; the ingest
+/// loop marks the WS-receive/state-update/feature-calc stages and the writer marks storage-write.
 #[derive(Debug, Clone)]
 pub struct IngestedRecord {
     pub bet: BetEvent,
     pub probability: f64,
     pub features: FeatureSnapshot,
+    pub timer: StageTimer,
 }
 
 /// The hot path: consumes `events` from Manifold, converts each bet to `common::BetEvent`, drives
@@ -33,10 +39,13 @@ pub async fn run_ingest_loop(
     feature_window_ns: u64,
     history_capacity: usize,
     health: SharedHealth,
+    timing: bool,
 ) {
     let mut engine = ProbabilityEngine::new(history_capacity);
 
     while let Some(event) = events.next().await {
+        // Stamp WS-receive once per broadcast; every bet it carries shares this entry instant.
+        let ws_receive = timing.then(Instant::now);
         let bets = match event {
             ManifoldWsEvent::Ack { .. } => {
                 health.set_connected(true);
@@ -45,17 +54,27 @@ pub async fn run_ingest_loop(
             ManifoldWsEvent::NewBets { bets, .. } => bets,
         };
         for wire_bet in &bets {
+            let mut timer = match ws_receive {
+                Some(t) => StageTimer::enabled_from(t),
+                None => StageTimer::disabled(),
+            };
+
             let domain: BetEvent = wire_bet.into();
             engine.apply(&domain);
+            timer.mark(Stage::StateUpdate);
             health.record_event();
 
             let Some(tracker) = engine.market(&domain.market_id) else {
                 continue; // apply() always creates the tracker, but stay defensive
             };
+            let features = compute_snapshot(tracker, feature_window_ns);
+            timer.mark(Stage::FeatureCalc);
+
             let record = IngestedRecord {
                 bet: domain.clone(),
                 probability: tracker.state().current_prob,
-                features: compute_snapshot(tracker, feature_window_ns),
+                features,
+                timer,
             };
             if tx.send(record).await.is_err() {
                 return; // writer's gone; nothing left to do
@@ -70,16 +89,28 @@ pub async fn run_ingest_loop(
 ///
 /// When `dry_run` is true, records are still drained (so the channel doesn't back up and the
 /// pipeline can be observed end-to-end via `health`) but never written to SQLite.
+///
+/// `latency_sink`, when `Some`, receives each record's completed `StageTimer` after its
+/// storage-write stage is marked — this is how the benchmark harness (Phase 5) collects per-event
+/// timelines to feed its histogram. It's `None` in normal operation. The stage is marked whether
+/// or not the row is actually written (including dry-run), so the timing reflects the pipeline's
+/// work regardless of persistence.
 pub async fn run_writer_loop(
     mut rx: mpsc::Receiver<IngestedRecord>,
     conn: Connection,
     health: SharedHealth,
     dry_run: bool,
+    latency_sink: Option<mpsc::Sender<StageTimer>>,
 ) -> SqlResult<Connection> {
-    while let Some(record) = rx.recv().await {
+    while let Some(mut record) = rx.recv().await {
         if !dry_run {
             write_record(&conn, &record)?;
             health.record_write_now();
+        }
+        record.timer.mark(Stage::StorageWrite);
+        if let Some(sink) = &latency_sink {
+            // The harness owning the sink drives the run; if it's gone, drop the timer silently.
+            let _ = sink.send(record.timer).await;
         }
     }
     Ok(conn)
@@ -179,8 +210,8 @@ mod tests {
         let (tx, rx) = mpsc::channel(16);
         let health = HealthStats::new();
         let (_, writer_result) = tokio::join!(
-            run_ingest_loop(events, tx, 60_000_000_000, 64, health.clone()),
-            run_writer_loop(rx, conn, health.clone(), false),
+            run_ingest_loop(events, tx, 60_000_000_000, 64, health.clone(), false),
+            run_writer_loop(rx, conn, health.clone(), false, None),
         );
         let conn = writer_result.unwrap();
 
@@ -238,8 +269,8 @@ mod tests {
         let (tx, rx) = mpsc::channel(16);
         let health = HealthStats::new();
         let (_, writer_result) = tokio::join!(
-            run_ingest_loop(events, tx, 1_000_000_000, 8, health.clone()),
-            run_writer_loop(rx, conn, health, false),
+            run_ingest_loop(events, tx, 1_000_000_000, 8, health.clone(), false),
+            run_writer_loop(rx, conn, health, false, None),
         );
         let conn = writer_result.unwrap(); // must return Ok, not hang or error
         assert_eq!(markets_count(&conn), 0);
@@ -257,8 +288,8 @@ mod tests {
         let (tx, rx) = mpsc::channel(16);
         let health = HealthStats::new();
         let (_, writer_result) = tokio::join!(
-            run_ingest_loop(events, tx, 1_000_000_000, 8, health.clone()),
-            run_writer_loop(rx, conn, health.clone(), true), // dry_run = true
+            run_ingest_loop(events, tx, 1_000_000_000, 8, health.clone(), false),
+            run_writer_loop(rx, conn, health.clone(), true, None), // dry_run = true
         );
         let conn = writer_result.unwrap();
 
@@ -269,5 +300,59 @@ mod tests {
         let snap = health.snapshot();
         assert_eq!(snap.events_processed, 1, "events are still counted in dry-run");
         assert_eq!(snap.last_write_ns, -1, "no write should be recorded in dry-run");
+    }
+
+    #[tokio::test]
+    async fn timing_enabled_captures_monotonic_per_stage_timestamps() {
+        // A single bet flows through the real pipeline with timing on; the writer forwards its
+        // completed timer to the latency sink. All four stages must be marked in causal order.
+        let events = futures_util::stream::iter(vec![ManifoldWsEvent::NewBets {
+            topic: "global/new-bet".to_string(),
+            bets: vec![wire_bet("m1", 1000, 0.5, 0.6)],
+        }]);
+        let conn = Connection::open_in_memory().unwrap();
+        apply_migrations(&conn).unwrap();
+
+        let (tx, rx) = mpsc::channel(16);
+        let (lat_tx, mut lat_rx) = mpsc::channel(16);
+        let health = HealthStats::new();
+        let (_, writer_result) = tokio::join!(
+            run_ingest_loop(events, tx, 1_000_000_000, 8, health.clone(), true),
+            run_writer_loop(rx, conn, health.clone(), false, Some(lat_tx)),
+        );
+        writer_result.unwrap();
+
+        let timer = lat_rx.recv().await.expect("one completed timer for the single bet");
+        assert!(timer.is_enabled());
+        let timeline = timer.timeline().expect("all four stages marked");
+        for pair in timeline.windows(2) {
+            assert!(pair[1] >= pair[0], "stage timestamps must be non-decreasing");
+        }
+        assert!(timer.is_monotonic());
+        assert!(timer.total().is_some(), "WS-receive -> storage-write duration is available");
+        assert!(lat_rx.recv().await.is_none(), "exactly one timer expected");
+    }
+
+    #[tokio::test]
+    async fn timing_disabled_leaves_records_uninstrumented() {
+        let events = futures_util::stream::iter(vec![ManifoldWsEvent::NewBets {
+            topic: "global/new-bet".to_string(),
+            bets: vec![wire_bet("m1", 1000, 0.5, 0.6)],
+        }]);
+        let conn = Connection::open_in_memory().unwrap();
+        apply_migrations(&conn).unwrap();
+
+        let (tx, rx) = mpsc::channel(16);
+        let (lat_tx, mut lat_rx) = mpsc::channel(16);
+        let health = HealthStats::new();
+        let (_, writer_result) = tokio::join!(
+            run_ingest_loop(events, tx, 1_000_000_000, 8, health.clone(), false),
+            run_writer_loop(rx, conn, health.clone(), false, Some(lat_tx)),
+        );
+        writer_result.unwrap();
+
+        let timer = lat_rx.recv().await.expect("the record still flows, just uninstrumented");
+        assert!(!timer.is_enabled());
+        assert_eq!(timer.timeline(), None);
     }
 }

@@ -475,6 +475,7 @@ dependencies = [
  "manifold-client",
  "polars",
  "probability-engine",
+ "quanta",
  "rusqlite",
  "tempfile",
  "tokio",
@@ -503,6 +504,7 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "quanta",
  "serde",
  "serde_json",
 ]
@@ -2574,6 +2576,21 @@ checksum = "4dcd034599e63b970727f70d79e02d62390a4a84f7c6b827c27c46d5ac3fa622"
 dependencies = [
  "ar_archive_writer",
  "cc",
+]
+
+[[package]]
+name = "quanta"
+version = "0.12.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3ab5a9d756f0d97bdc89019bd2e4ea098cf9cde50ee7564dde6b81ccc8f06c7"
+dependencies = [
+ "crossbeam-utils",
+ "libc",
+ "once_cell",
+ "raw-cpuid",
+ "wasi",
+ "web-sys",
+ "winapi",
 ]
 
 [[package]]

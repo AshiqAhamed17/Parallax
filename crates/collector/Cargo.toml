@@ -12,6 +12,7 @@ futures-util = "0.3.34"
 manifold-client = { version = "0.1.0", path = "../manifold-client" }
 polars = { version = "0.55.2", features = ["parquet"] }
 probability-engine = { version = "0.1.0", path = "../probability-engine" }
+quanta = "0.12"
 rusqlite = { version = "0.32", features = ["bundled"] }
 tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal"] }
 tracing = "0.1.44"
