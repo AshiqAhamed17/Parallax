@@ -1,10 +1,10 @@
-use bench_harness::{synthetic_stream, SyntheticConfig};
+use bench_harness::{run_load_test, BenchRun, RunMetadata, SyntheticConfig};
 use clap::Parser;
-use futures_util::StreamExt;
+use std::path::PathBuf;
 
-/// Synthetic load generator for the Parallax latency benchmark harness (Phase 5). Emits WS-shaped
-/// synthetic bet events at a configurable rate and reports the throughput it actually achieved.
-/// Later phases feed this stream through the real collector pipeline with per-stage timing on.
+/// Latency benchmark harness for the Parallax ingestion pipeline (Phase 5). Generates WS-shaped
+/// synthetic load at a configurable rate, drives it through the real collector pipeline with
+/// per-stage `quanta` timing on, and reports per-stage latency percentiles (p50/p95/p99/p99.9/max).
 #[derive(Parser, Debug)]
 #[command(name = "bench-harness")]
 struct Args {
@@ -13,7 +13,7 @@ struct Args {
     rate: f64,
 
     /// Total number of events to generate.
-    #[arg(long, default_value_t = 10_000)]
+    #[arg(long, default_value_t = 50_000)]
     count: usize,
 
     /// Number of distinct markets to spread bets across.
@@ -23,28 +23,68 @@ struct Args {
     /// PRNG seed for reproducible event sequences.
     #[arg(long, default_value_t = 42)]
     seed: u64,
+
+    /// Feature-window size in seconds.
+    #[arg(long, default_value_t = 60)]
+    feature_window_secs: u64,
+
+    /// Per-market rolling bet-history capacity.
+    #[arg(long, default_value_t = 512)]
+    history_capacity: usize,
+
+    /// Write the Markdown latency report to this path (in addition to printing a summary).
+    #[arg(long)]
+    report: Option<PathBuf>,
 }
 
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    let config = SyntheticConfig {
-        rate_per_sec: args.rate,
-        num_markets: args.num_markets,
-        seed: args.seed,
+
+    let feature_window_ns = args.feature_window_secs * 1_000_000_000;
+    let run = BenchRun {
+        config: SyntheticConfig {
+            rate_per_sec: args.rate,
+            num_markets: args.num_markets,
+            seed: args.seed,
+        },
+        count: args.count,
+        feature_window_ns,
+        history_capacity: args.history_capacity,
     };
 
-    let start = std::time::Instant::now();
-    let mut stream = Box::pin(synthetic_stream(config, args.count));
-    let mut n = 0usize;
-    while stream.next().await.is_some() {
-        n += 1;
-    }
-    let elapsed = start.elapsed().as_secs_f64();
-    let measured = if elapsed > 0.0 { n as f64 / elapsed } else { f64::INFINITY };
+    let outcome = match run_load_test(run).await {
+        Ok(o) => o,
+        Err(e) => {
+            eprintln!("load test failed: {e}");
+            std::process::exit(1);
+        }
+    };
 
-    println!(
-        "generated {n} events in {elapsed:.3}s -> {measured:.1} events/s (requested {:.1}/s)",
-        args.rate
-    );
+    let meta = RunMetadata {
+        requested_rate: args.rate,
+        events: args.count,
+        num_markets: args.num_markets,
+        seed: args.seed,
+        feature_window_ns,
+        achieved_throughput: outcome.achieved_throughput,
+        elapsed_secs: outcome.elapsed_secs,
+        command: format!(
+            "bench-harness --rate {} --count {} --num-markets {} --seed {}",
+            args.rate, args.count, args.num_markets, args.seed
+        ),
+    };
+
+    let markdown = outcome.report.to_markdown(&meta);
+    print!("{markdown}");
+
+    if let Some(path) = &args.report {
+        match std::fs::write(path, &markdown) {
+            Ok(()) => eprintln!("wrote report to {}", path.display()),
+            Err(e) => {
+                eprintln!("failed to write report to {}: {e}", path.display());
+                std::process::exit(1);
+            }
+        }
+    }
 }

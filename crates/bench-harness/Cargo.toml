@@ -4,8 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+common = { version = "0.1.0", path = "../common" }
+collector = { version = "0.1.0", path = "../collector" }
 manifold-client = { version = "0.1.0", path = "../manifold-client" }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
 futures-util = "0.3.34"
 async-stream = "0.3.6"
 clap = { version = "4", features = ["derive"] }
+hdrhistogram = "7"
+rusqlite = { version = "0.32", features = ["bundled"] }
