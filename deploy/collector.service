@@ -1,0 +1,19 @@
+[Unit]
+Description=Parallax Manifold Collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/parallax
+Environment=RUST_LOG=info
+ExecStart=/opt/parallax/target/release/collector \
+    --db-path /opt/parallax/data/parallax.db \
+    --archive-dir /opt/parallax/data/archive
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/parallax/collector.log
+StandardError=append:/var/log/parallax/collector.log
+
+[Install]
+WantedBy=multi-user.target
