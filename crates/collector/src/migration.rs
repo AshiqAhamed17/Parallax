@@ -1,4 +1,16 @@
 use rusqlite::{Connection, Result};
+use std::path::Path;
+
+/// Opens (creating if absent) the SQLite database at `path`, switches it to WAL journal mode, and
+/// applies migrations. WAL allows the writer connection (this one) and the archive exporter's
+/// separate read connection to the same file to coexist without "database is locked" errors —
+/// required once `run_archive_loop` opens its own connection alongside the writer's.
+pub fn open_and_migrate(path: &Path) -> Result<Connection> {
+    let conn = Connection::open(path)?;
+    conn.pragma_update(None, "journal_mode", "WAL")?;
+    apply_migrations(&conn)?;
+    Ok(conn)
+}
 
 /// Creates every table from `implementation.md` §5 if it doesn't already exist. Safe to call on
 /// every startup — `CREATE TABLE IF NOT EXISTS` makes this idempotent, so the collector doesn't
