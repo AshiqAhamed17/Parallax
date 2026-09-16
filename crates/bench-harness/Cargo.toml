@@ -13,3 +13,12 @@ async-stream = "0.3.6"
 clap = { version = "4", features = ["derive"] }
 hdrhistogram = "7"
 rusqlite = { version = "0.32", features = ["bundled"] }
+
+[dev-dependencies]
+criterion = "0.5"
+feature-engine = { version = "0.1.0", path = "../feature-engine" }
+probability-engine = { version = "0.1.0", path = "../probability-engine" }
+
+[[bench]]
+name = "pipeline_micro"
+harness = false
