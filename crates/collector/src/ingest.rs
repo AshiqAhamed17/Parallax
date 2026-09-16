@@ -1,3 +1,4 @@
+use crate::health::SharedHealth;
 use common::BetEvent;
 use feature_engine::{compute_snapshot, FeatureSnapshot};
 use futures_util::{Stream, StreamExt};
@@ -23,22 +24,30 @@ pub struct IngestedRecord {
 /// falls behind, `tx.send` applies async backpressure (the ingest task yields, it doesn't block
 /// an OS thread on disk I/O) rather than letting unbounded memory growth mask a stuck writer.
 ///
-/// `Ack` events carry no bets and are ignored.
+/// `Ack` events carry no bets; they're used only to mark the connection healthy in `health` (the
+/// current `ManifoldWsEvent` surface has no explicit disconnect notification, so an Ack is the
+/// best available "we're really connected" signal — see `implementation.md`'s Task 4.4 note).
 pub async fn run_ingest_loop(
     mut events: impl Stream<Item = ManifoldWsEvent> + Unpin,
     tx: mpsc::Sender<IngestedRecord>,
     feature_window_ns: u64,
     history_capacity: usize,
+    health: SharedHealth,
 ) {
     let mut engine = ProbabilityEngine::new(history_capacity);
 
     while let Some(event) = events.next().await {
-        let ManifoldWsEvent::NewBets { bets, .. } = event else {
-            continue;
+        let bets = match event {
+            ManifoldWsEvent::Ack { .. } => {
+                health.set_connected(true);
+                continue;
+            }
+            ManifoldWsEvent::NewBets { bets, .. } => bets,
         };
         for wire_bet in &bets {
             let domain: BetEvent = wire_bet.into();
             engine.apply(&domain);
+            health.record_event();
 
             let Some(tracker) = engine.market(&domain.market_id) else {
                 continue; // apply() always creates the tracker, but stay defensive
@@ -58,12 +67,20 @@ pub async fn run_ingest_loop(
 /// Drains `rx`, writing each record to SQLite, until the channel closes (the ingest loop ended
 /// and dropped its sender). Returns the connection back so callers (tests, graceful shutdown)
 /// can use it afterward instead of it being silently dropped inside this function.
+///
+/// When `dry_run` is true, records are still drained (so the channel doesn't back up and the
+/// pipeline can be observed end-to-end via `health`) but never written to SQLite.
 pub async fn run_writer_loop(
     mut rx: mpsc::Receiver<IngestedRecord>,
     conn: Connection,
+    health: SharedHealth,
+    dry_run: bool,
 ) -> SqlResult<Connection> {
     while let Some(record) = rx.recv().await {
-        write_record(&conn, &record)?;
+        if !dry_run {
+            write_record(&conn, &record)?;
+            health.record_write_now();
+        }
     }
     Ok(conn)
 }
@@ -119,6 +136,7 @@ fn write_record(conn: &Connection, record: &IngestedRecord) -> SqlResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::health::HealthStats;
     use crate::migration::apply_migrations;
     use manifold_client::Bet;
 
@@ -159,11 +177,18 @@ mod tests {
         apply_migrations(&conn).unwrap();
 
         let (tx, rx) = mpsc::channel(16);
+        let health = HealthStats::new();
         let (_, writer_result) = tokio::join!(
-            run_ingest_loop(events, tx, 60_000_000_000, 64),
-            run_writer_loop(rx, conn),
+            run_ingest_loop(events, tx, 60_000_000_000, 64, health.clone()),
+            run_writer_loop(rx, conn, health.clone(), false),
         );
         let conn = writer_result.unwrap();
+
+        // health tracked all 3 bets and the Ack's connection signal.
+        let snap = health.snapshot();
+        assert_eq!(snap.events_processed, 3);
+        assert!(snap.connected);
+        assert!(snap.last_write_ns > 0);
 
         // 3 bets total (b1@m1, b2@m1, b3@m2); the Ack contributed nothing.
         let bet_count: i64 = conn.query_row("SELECT COUNT(*) FROM bets", [], |r| r.get(0)).unwrap();
@@ -211,11 +236,38 @@ mod tests {
         apply_migrations(&conn).unwrap();
 
         let (tx, rx) = mpsc::channel(16);
+        let health = HealthStats::new();
         let (_, writer_result) = tokio::join!(
-            run_ingest_loop(events, tx, 1_000_000_000, 8),
-            run_writer_loop(rx, conn),
+            run_ingest_loop(events, tx, 1_000_000_000, 8, health.clone()),
+            run_writer_loop(rx, conn, health, false),
         );
         let conn = writer_result.unwrap(); // must return Ok, not hang or error
         assert_eq!(markets_count(&conn), 0);
+    }
+
+    #[tokio::test]
+    async fn dry_run_skips_writes_but_still_tracks_health() {
+        let events = futures_util::stream::iter(vec![ManifoldWsEvent::NewBets {
+            topic: "global/new-bet".to_string(),
+            bets: vec![wire_bet("m1", 1000, 0.5, 0.6)],
+        }]);
+        let conn = Connection::open_in_memory().unwrap();
+        apply_migrations(&conn).unwrap();
+
+        let (tx, rx) = mpsc::channel(16);
+        let health = HealthStats::new();
+        let (_, writer_result) = tokio::join!(
+            run_ingest_loop(events, tx, 1_000_000_000, 8, health.clone()),
+            run_writer_loop(rx, conn, health.clone(), true), // dry_run = true
+        );
+        let conn = writer_result.unwrap();
+
+        assert_eq!(markets_count(&conn), 0, "dry-run must not write to the DB");
+        let bet_count: i64 = conn.query_row("SELECT COUNT(*) FROM bets", [], |r| r.get(0)).unwrap();
+        assert_eq!(bet_count, 0);
+
+        let snap = health.snapshot();
+        assert_eq!(snap.events_processed, 1, "events are still counted in dry-run");
+        assert_eq!(snap.last_write_ns, -1, "no write should be recorded in dry-run");
     }
 }
