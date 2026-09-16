@@ -4,3 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+common = { version = "0.1.0", path = "../common" }
+feature-engine = { version = "0.1.0", path = "../feature-engine" }
+futures-util = "0.3.34"
+manifold-client = { version = "0.1.0", path = "../manifold-client" }
+probability-engine = { version = "0.1.0", path = "../probability-engine" }
+rusqlite = { version = "0.32", features = ["bundled"] }
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "net", "time", "sync"] }
