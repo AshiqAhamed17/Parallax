@@ -120,18 +120,28 @@ pub async fn run_writer_loop(
 /// IGNORE`) so `bets`/`probability_snapshots`/`feature_snapshots` always have a market to
 /// reference — real question text/close time require a REST backfill this task doesn't do (see
 /// `tasks.md` Task 4.2 note); the placeholder keeps the row present rather than absent.
+///
+/// The four inserts run inside a single per-record transaction (`unchecked_transaction` — safe:
+/// the writer is the connection's only user) and via `prepare_cached`, so v1's four separate
+/// autocommits + four fresh statement compilations per record become one commit reusing cached
+/// prepared statements (Task 6.4 / v3). This is the `feature→storage` hotspot the v2 profile left
+/// dominant. A record is still committed atomically as it arrives — no batching, no durability
+/// change.
 fn write_record(conn: &Connection, record: &IngestedRecord) -> SqlResult<()> {
-    conn.execute(
-        "INSERT OR IGNORE INTO markets (market_id, platform, question_text, close_time)
-         VALUES (?1, 'manifold', '', '')",
-        params![record.bet.market_id],
-    )?;
+    let tx = conn.unchecked_transaction()?;
+    {
+        tx.prepare_cached(
+            "INSERT OR IGNORE INTO markets (market_id, platform, question_text, close_time)
+             VALUES (?1, 'manifold', '', '')",
+        )?
+        .execute(params![record.bet.market_id])?;
 
-    conn.execute(
-        "INSERT INTO bets
-            (market_id, ts_ns, prob_before, prob_after, amount, shares, is_limit_order)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        params![
+        tx.prepare_cached(
+            "INSERT INTO bets
+                (market_id, ts_ns, prob_before, prob_after, amount, shares, is_limit_order)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        )?
+        .execute(params![
             record.bet.market_id,
             record.bet.ts_ns as i64,
             record.bet.prob_before,
@@ -139,29 +149,28 @@ fn write_record(conn: &Connection, record: &IngestedRecord) -> SqlResult<()> {
             record.bet.amount,
             record.bet.shares,
             record.bet.is_limit_order as i64,
-        ],
-    )?;
+        ])?;
 
-    conn.execute(
-        "INSERT INTO probability_snapshots (market_id, ts_ns, probability, volume_24h)
-         VALUES (?1, ?2, ?3, NULL)",
-        params![record.bet.market_id, record.bet.ts_ns as i64, record.probability],
-    )?;
+        tx.prepare_cached(
+            "INSERT INTO probability_snapshots (market_id, ts_ns, probability, volume_24h)
+             VALUES (?1, ?2, ?3, NULL)",
+        )?
+        .execute(params![record.bet.market_id, record.bet.ts_ns as i64, record.probability])?;
 
-    conn.execute(
-        "INSERT INTO feature_snapshots
-            (market_id, ts_ns, prob_velocity, bet_arrival_rate, realized_vol)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![
+        tx.prepare_cached(
+            "INSERT INTO feature_snapshots
+                (market_id, ts_ns, prob_velocity, bet_arrival_rate, realized_vol)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+        )?
+        .execute(params![
             record.bet.market_id,
             record.features.ts_ns as i64,
             record.features.prob_velocity,
             record.features.bet_arrival_rate,
             record.features.realized_vol,
-        ],
-    )?;
-
-    Ok(())
+        ])?;
+    }
+    tx.commit()
 }
 
 #[cfg(test)]
