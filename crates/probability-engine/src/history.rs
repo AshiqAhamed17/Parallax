@@ -1,16 +1,21 @@
-use common::BetEvent;
+use common::BetSample;
 
-/// A fixed-capacity ring buffer of the most recent `BetEvent`s for a single market.
+/// A fixed-capacity ring buffer of the most recent bets for a single market.
+///
+/// Stores `BetSample` (a `Copy`, `market_id`-free view of a `BetEvent`), not the full `BetEvent`:
+/// every bet in one market's history carries that same id, so keeping a heap `String` per entry
+/// was the top allocation in the v1 profile. With `BetSample`, pushes are a plain `Copy` into
+/// pre-allocated storage — no heap traffic at all.
 ///
 /// Backing storage is pre-allocated to `capacity` and never grows: once full, each push
-/// overwrites the oldest entry in place (O(1), no allocation). This bounds memory per market
-/// regardless of how long the collector runs — a market that sees millions of bets still holds
-/// only `capacity` of them. The feature engine (Phase 3) reads the current window via `iter`,
-/// which always yields oldest → newest.
+/// overwrites the oldest entry in place (O(1)). This bounds memory per market regardless of how
+/// long the collector runs — a market that sees millions of bets still holds only `capacity` of
+/// them. The feature engine (Phase 3) reads the current window via `iter`, which always yields
+/// oldest → newest.
 #[derive(Debug, Clone)]
 pub struct BetHistory {
     /// Grows to `capacity` as the buffer fills, then stays at `capacity` for the rest of its life.
-    buf: Vec<BetEvent>,
+    buf: Vec<BetSample>,
     capacity: usize,
     /// Once full, the index of the oldest element (and the next slot to overwrite). While still
     /// filling this stays 0, since pushes append rather than overwrite.
@@ -32,12 +37,13 @@ impl BetHistory {
         }
     }
 
-    /// Appends `event`, evicting the oldest entry if the buffer is already at capacity. O(1).
-    pub fn push(&mut self, event: BetEvent) {
+    /// Appends `sample`, evicting the oldest entry if the buffer is already at capacity. O(1),
+    /// allocation-free (`BetSample` is `Copy`).
+    pub fn push(&mut self, sample: BetSample) {
         if self.buf.len() < self.capacity {
-            self.buf.push(event);
+            self.buf.push(sample);
         } else {
-            self.buf[self.next] = event;
+            self.buf[self.next] = sample;
             self.next = (self.next + 1) % self.capacity;
         }
     }
@@ -57,7 +63,7 @@ impl BetHistory {
     }
 
     /// Iterates the current window from oldest to newest.
-    pub fn iter(&self) -> impl Iterator<Item = &BetEvent> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = &BetSample> + '_ {
         let cap = self.capacity;
         let next = self.next;
         let len = self.buf.len();
@@ -69,9 +75,8 @@ impl BetHistory {
 mod tests {
     use super::*;
 
-    fn bet(ts_ns: u64) -> BetEvent {
-        BetEvent {
-            market_id: "m".to_string(),
+    fn bet(ts_ns: u64) -> BetSample {
+        BetSample {
             ts_ns,
             prob_before: 0.5,
             prob_after: 0.5,

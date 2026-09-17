@@ -1,4 +1,4 @@
-use common::BetEvent;
+use common::BetSample;
 
 /// Rate of change of market-implied probability over the trailing `window_ns`, in probability
 /// units per second (e.g. `0.1` means the probability is drifting +10 percentage points/second).
@@ -19,7 +19,7 @@ use common::BetEvent;
 /// Returns `0.0` if `recent_events` is empty, if `window_ns` is `0` (a zero-width window has no
 /// meaningful rate), or if no event falls within the window (shouldn't happen if the caller
 /// passes the tail of a `BetHistory`, but handled defensively rather than panicking).
-pub fn prob_velocity(recent_events: &[BetEvent], window_ns: u64) -> f64 {
+pub fn prob_velocity(recent_events: &[BetSample], window_ns: u64) -> f64 {
     if window_ns == 0 {
         return 0.0;
     }
@@ -27,11 +27,10 @@ pub fn prob_velocity(recent_events: &[BetEvent], window_ns: u64) -> f64 {
         return 0.0;
     };
     let window_start = latest.ts_ns.saturating_sub(window_ns);
-    let windowed: Vec<&BetEvent> = recent_events
-        .iter()
-        .filter(|e| e.ts_ns >= window_start)
-        .collect();
-    let Some(first) = windowed.first() else {
+    // `recent_events` is sorted oldest→newest, so the in-window tail is a contiguous suffix found
+    // in O(log n) — no per-call allocation (the old `Vec<&BetEvent>` collect was a hot-path alloc).
+    let start = recent_events.partition_point(|e| e.ts_ns < window_start);
+    let Some(first) = recent_events[start..].first() else {
         return 0.0;
     };
     let delta_prob = latest.prob_after - first.prob_before;
@@ -43,9 +42,8 @@ pub fn prob_velocity(recent_events: &[BetEvent], window_ns: u64) -> f64 {
 mod tests {
     use super::*;
 
-    fn bet(ts_ns: u64, prob_before: f64, prob_after: f64) -> BetEvent {
-        BetEvent {
-            market_id: "m".to_string(),
+    fn bet(ts_ns: u64, prob_before: f64, prob_after: f64) -> BetSample {
+        BetSample {
             ts_ns,
             prob_before,
             prob_after,

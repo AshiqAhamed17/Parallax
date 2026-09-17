@@ -1,4 +1,4 @@
-use common::BetEvent;
+use common::BetSample;
 
 /// Number of bets per second over the trailing `window_ns`, counted relative to the timestamp of
 /// the most recent event (not wall-clock "now" — the pipeline has no independent clock input
@@ -9,7 +9,7 @@ use common::BetEvent;
 ///
 /// # Edge cases
 /// Returns `0.0` if `recent_events` is empty or `window_ns` is `0`.
-pub fn bet_arrival_rate(recent_events: &[BetEvent], window_ns: u64) -> f64 {
+pub fn bet_arrival_rate(recent_events: &[BetSample], window_ns: u64) -> f64 {
     if window_ns == 0 {
         return 0.0;
     }
@@ -17,10 +17,9 @@ pub fn bet_arrival_rate(recent_events: &[BetEvent], window_ns: u64) -> f64 {
         return 0.0;
     };
     let window_start = latest.ts_ns.saturating_sub(window_ns);
-    let count = recent_events
-        .iter()
-        .filter(|e| e.ts_ns >= window_start)
-        .count();
+    // Sorted oldest→newest, so the in-window count is just the length of the suffix at/after
+    // `window_start` — an O(log n) binary search instead of an O(n) scan.
+    let count = recent_events.len() - recent_events.partition_point(|e| e.ts_ns < window_start);
     let window_secs = window_ns as f64 / 1_000_000_000.0;
     count as f64 / window_secs
 }
@@ -29,9 +28,8 @@ pub fn bet_arrival_rate(recent_events: &[BetEvent], window_ns: u64) -> f64 {
 mod tests {
     use super::*;
 
-    fn bet(ts_ns: u64) -> BetEvent {
-        BetEvent {
-            market_id: "m".to_string(),
+    fn bet(ts_ns: u64) -> BetSample {
+        BetSample {
             ts_ns,
             prob_before: 0.5,
             prob_after: 0.5,

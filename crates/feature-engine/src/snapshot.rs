@@ -1,5 +1,5 @@
 use crate::{bet_arrival_rate, prob_velocity, realized_volatility};
-use common::BetEvent;
+use common::BetSample;
 use probability_engine::MarketTracker;
 
 /// A point-in-time bundle of all Phase 3 feature calculations for one market, matching the
@@ -28,7 +28,10 @@ pub struct FeatureSnapshot {
 /// continuously belongs to the `collector` binary (Phase 4), per `implementation.md` §3; this
 /// crate stays a pure, synchronous calculation library.
 pub fn compute_snapshot(tracker: &MarketTracker, window_ns: u64) -> FeatureSnapshot {
-    let events: Vec<BetEvent> = tracker.history().iter().cloned().collect();
+    // The ring buffer isn't contiguous in logical order once it wraps, so we still linearize the
+    // window — but into `BetSample`s (`Copy`), a single POD `Vec` rather than the per-event storm
+    // of `String` allocations the old `iter().cloned()` over `BetEvent`s produced.
+    let events: Vec<BetSample> = tracker.history().iter().copied().collect();
     FeatureSnapshot {
         market_id: tracker.state().market_id.clone(),
         ts_ns: tracker.state().last_updated_ns,
@@ -41,6 +44,7 @@ pub fn compute_snapshot(tracker: &MarketTracker, window_ns: u64) -> FeatureSnaps
 #[cfg(test)]
 mod tests {
     use super::*;
+    use common::BetEvent;
 
     fn bet(market_id: &str, ts_ns: u64, prob_before: f64, prob_after: f64) -> BetEvent {
         BetEvent {

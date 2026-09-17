@@ -25,6 +25,38 @@ pub struct BetEvent {
     pub is_limit_order: bool,
 }
 
+/// The numeric payload of a `BetEvent` with the `market_id` dropped — a `Copy`, allocation-free
+/// record for the per-market rolling history buffer (`probability_engine::BetHistory`) and the
+/// feature calculations.
+///
+/// Every bet stored in a market's history necessarily has that same `market_id`, so keeping a
+/// heap-allocated `String` copy of it in every buffered entry is pure waste (it dominated the v1
+/// profile — see `benchmarks/v1-profile-notes.md`). `BetSample` holds only the fields the feature
+/// engine actually reads, is `Copy`, and never touches the heap, so pushing into the ring buffer
+/// and snapshotting the window are allocation-free.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct BetSample {
+    pub ts_ns: u64,
+    pub prob_before: f64,
+    pub prob_after: f64,
+    pub amount: f64,
+    pub shares: f64,
+    pub is_limit_order: bool,
+}
+
+impl From<&BetEvent> for BetSample {
+    fn from(e: &BetEvent) -> Self {
+        Self {
+            ts_ns: e.ts_ns,
+            prob_before: e.prob_before,
+            prob_after: e.prob_after,
+            amount: e.amount,
+            shares: e.shares,
+            is_limit_order: e.is_limit_order,
+        }
+    }
+}
+
 /// The current probability state of a single market, maintained by the probability engine as
 /// bets stream in. This is the compact "where is the market right now" snapshot; the rolling
 /// window of recent `BetEvent`s used to derive velocity/volatility features lives alongside it in
@@ -114,6 +146,18 @@ mod tests {
             shares: 15.0,
             is_limit_order: false,
         }
+    }
+
+    #[test]
+    fn bet_sample_drops_market_id_but_keeps_numeric_fields() {
+        let event = bet(1_234, 0.73);
+        let sample: BetSample = (&event).into();
+        assert_eq!(sample.ts_ns, event.ts_ns);
+        assert_eq!(sample.prob_before, event.prob_before);
+        assert_eq!(sample.prob_after, event.prob_after);
+        assert_eq!(sample.amount, event.amount);
+        assert_eq!(sample.shares, event.shares);
+        assert_eq!(sample.is_limit_order, event.is_limit_order);
     }
 
     #[test]

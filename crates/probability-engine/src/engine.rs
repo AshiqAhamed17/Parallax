@@ -23,12 +23,19 @@ impl ProbabilityEngine {
     }
 
     /// Routes `event` to its market's tracker, creating the tracker on first sight of that market.
+    ///
+    /// Looks the tracker up by reference first (`get_mut`) so the steady-state path — the market
+    /// already exists — allocates nothing. `HashMap::entry` was cloning `market_id` into an owned
+    /// `String` on *every* bet just to look it up; the clone now happens only on the rare
+    /// first-sight insert.
     pub fn apply(&mut self, event: &BetEvent) {
-        let capacity = self.history_capacity;
-        self.markets
-            .entry(event.market_id.clone())
-            .or_insert_with(|| MarketTracker::new(event.market_id.clone(), capacity))
-            .apply(event);
+        if let Some(tracker) = self.markets.get_mut(&event.market_id) {
+            tracker.apply(event);
+        } else {
+            let mut tracker = MarketTracker::new(event.market_id.clone(), self.history_capacity);
+            tracker.apply(event);
+            self.markets.insert(event.market_id.clone(), tracker);
+        }
     }
 
     /// The tracker for `market_id`, or `None` if no bet for it has been applied yet.

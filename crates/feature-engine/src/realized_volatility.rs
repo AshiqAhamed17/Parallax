@@ -1,4 +1,4 @@
-use common::BetEvent;
+use common::BetSample;
 
 /// Realized volatility of the probability series over the trailing `window_ns`.
 ///
@@ -26,7 +26,7 @@ use common::BetEvent;
 /// # Edge cases
 /// Returns `0.0` if fewer than 2 events fall within the window (at least two `prob_after` values
 /// are required to form a single return), or if `window_ns` is `0`.
-pub fn realized_volatility(recent_events: &[BetEvent], window_ns: u64) -> f64 {
+pub fn realized_volatility(recent_events: &[BetSample], window_ns: u64) -> f64 {
     if window_ns == 0 {
         return 0.0;
     }
@@ -34,10 +34,10 @@ pub fn realized_volatility(recent_events: &[BetEvent], window_ns: u64) -> f64 {
         return 0.0;
     };
     let window_start = latest.ts_ns.saturating_sub(window_ns);
-    let windowed: Vec<&BetEvent> = recent_events
-        .iter()
-        .filter(|e| e.ts_ns >= window_start)
-        .collect();
+    // Sorted oldest→newest: the in-window events are the contiguous suffix from `start` on, found
+    // in O(log n). Operate on that subslice directly — no `Vec<&BetEvent>` allocation per call.
+    let start = recent_events.partition_point(|e| e.ts_ns < window_start);
+    let windowed = &recent_events[start..];
     if windowed.len() < 2 {
         return 0.0;
     }
@@ -56,9 +56,8 @@ pub fn realized_volatility(recent_events: &[BetEvent], window_ns: u64) -> f64 {
 mod tests {
     use super::*;
 
-    fn bet(ts_ns: u64, prob_after: f64) -> BetEvent {
-        BetEvent {
-            market_id: "m".to_string(),
+    fn bet(ts_ns: u64, prob_after: f64) -> BetSample {
+        BetSample {
             ts_ns,
             prob_before: prob_after,
             prob_after,

@@ -4,7 +4,7 @@
 //! pipeline latency including channel and storage, while these isolate the pure compute of
 //! `MarketState::apply` and the feature calculations. Run with `cargo bench -p bench-harness`.
 
-use common::{BetEvent, MarketState};
+use common::{BetEvent, BetSample, MarketState};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use feature_engine::{bet_arrival_rate, compute_snapshot, prob_velocity, realized_volatility};
 use probability_engine::MarketTracker;
@@ -46,16 +46,18 @@ fn bench_market_state_apply(c: &mut Criterion) {
 fn bench_feature_calcs(c: &mut Criterion) {
     // 512 = the collector's default per-market history capacity.
     let events = make_events(512);
+    // The feature fns operate on the ring buffer's `BetSample`s (Task 6.2).
+    let samples: Vec<BetSample> = events.iter().map(BetSample::from).collect();
     let window_ns = 60_000_000_000u64;
 
     c.bench_function("prob_velocity/512", |b| {
-        b.iter(|| black_box(prob_velocity(black_box(&events), black_box(window_ns))));
+        b.iter(|| black_box(prob_velocity(black_box(&samples), black_box(window_ns))));
     });
     c.bench_function("bet_arrival_rate/512", |b| {
-        b.iter(|| black_box(bet_arrival_rate(black_box(&events), black_box(window_ns))));
+        b.iter(|| black_box(bet_arrival_rate(black_box(&samples), black_box(window_ns))));
     });
     c.bench_function("realized_volatility/512", |b| {
-        b.iter(|| black_box(realized_volatility(black_box(&events), black_box(window_ns))));
+        b.iter(|| black_box(realized_volatility(black_box(&samples), black_box(window_ns))));
     });
 
     let mut tracker = MarketTracker::new("m", 512);

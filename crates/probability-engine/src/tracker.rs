@@ -36,7 +36,9 @@ impl MarketTracker {
             event.market_id, self.state.market_id
         );
         self.state.apply(event);
-        self.history.push(event.clone());
+        // `BetSample::from(&BetEvent)` drops the redundant `market_id` and is a plain field copy —
+        // no per-bet String allocation (the top v1 hotspot).
+        self.history.push(event.into());
     }
 
     /// The current compact state snapshot.
