@@ -24,11 +24,3 @@ with Polymarket, Manifold, and PredictIt as secondary cross-platform sources. It
   reports; it does not trade.
 
 This is a research and engineering project, not a trading product. It never places real orders.
-
-## Status
-
-Early stage — see the project plan and design docs for the full architecture and roadmap.
-
-## License
-
-Private repository. All rights reserved (for now).
