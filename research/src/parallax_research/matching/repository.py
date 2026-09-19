@@ -120,6 +120,27 @@ def get(conn: sqlite3.Connection, match_id: int) -> MarketMatch | None:
     return _row_to_match(row) if row is not None else None
 
 
+def find_match(
+    conn: sqlite3.Connection,
+    *,
+    manifold_market_id: str,
+    external_market_id: str,
+    platform: str = "polymarket",
+) -> MarketMatch | None:
+    """The existing match for this (manifold, external, platform) triple, or None.
+
+    Used to keep inserts idempotent (e.g. re-running the manual mapping loader). Returns the oldest
+    match if somehow more than one exists.
+    """
+    row = conn.execute(
+        f"SELECT {_COLUMNS} FROM market_matches "
+        "WHERE manifold_market_id = ? AND external_market_id = ? AND platform = ? "
+        "ORDER BY id LIMIT 1",
+        (manifold_market_id, external_market_id, platform),
+    ).fetchone()
+    return _row_to_match(row) if row is not None else None
+
+
 def list_by_status(conn: sqlite3.Connection, status: str) -> list[MarketMatch]:
     """All matches with the given status, oldest first."""
     rows = conn.execute(

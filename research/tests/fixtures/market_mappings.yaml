@@ -1,0 +1,8 @@
+# Hand-curated Manifold↔Polymarket equivalent markets (test fixture for Task 8.2).
+matches:
+  - manifold_market_id: "mf-us-recession-2027"
+    polymarket_market_id: "0x5db999fad322cea2914535aae5517060c3f80ad6d8c0231cde2124a434d16846"
+    note: "Both resolve YES if the US enters a recession before 2027."
+  - manifold_market_id: "mf-btc-100k"
+    polymarket_market_id: "0x7d0aaf81bbd3fd73b6a1651cce08a452c0cbf9c0cbb4520ce0f981065b639d88"
+    note: "Both ask whether BTC closes above $100k by year end."
