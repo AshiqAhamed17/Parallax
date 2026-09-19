@@ -22,10 +22,10 @@ def test_round_trip_full_record():
     assert NormalizedMarket.model_validate(dumped) == market
 
 
-def test_round_trip_minimal_metaculus_record():
-    # Metaculus has no trading volume, and close_time may be absent — both default to None.
+def test_round_trip_minimal_record():
+    # volume and close_time may be absent (e.g. a perpetual market) — both default to None.
     market = NormalizedMarket(
-        platform="metaculus",
+        platform="polymarket",
         market_id="q-9999",
         question_text="Will X happen by 2030?",
         probability=0.5,
@@ -46,7 +46,7 @@ def test_probability_bounds_are_enforced():
 def test_unknown_platform_rejected():
     with pytest.raises(ValidationError):
         NormalizedMarket(
-            platform="polymarket", market_id="m", question_text="q?", probability=0.5
+            platform="metaculus", market_id="m", question_text="q?", probability=0.5
         )
 
 

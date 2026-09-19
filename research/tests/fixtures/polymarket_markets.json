@@ -1,0 +1,74 @@
+[
+  {
+    "conditionId": "0x7d0aaf81bbd3fd73b6a1651cce08a452c0cbf9c0cbb4520ce0f981065b639d88",
+    "id": "2063134",
+    "question": "Will Adanech Abiebie be the next Prime Minister of Ethiopia?",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.003\", \"0.997\"]",
+    "volumeNum": 83455499.883002,
+    "volume": "83455499.883002",
+    "endDate": "2026-06-01T00:00:00Z",
+    "active": true,
+    "closed": false
+  },
+  {
+    "conditionId": "0x5db999fad322cea2914535aae5517060c3f80ad6d8c0231cde2124a434d16846",
+    "id": "665374",
+    "question": "Will the U.S. invade Iran before 2027?",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.155\", \"0.845\"]",
+    "volumeNum": 67023102.11519498,
+    "volume": "67023102.11519498",
+    "endDate": "2027-01-01T04:59:00Z",
+    "active": true,
+    "closed": false
+  },
+  {
+    "conditionId": "0x9999000000000000000000000000000000000000000000000000000000000001",
+    "id": "900001",
+    "question": "Spread: Nagoya Grampus (-2.5)",
+    "outcomes": "[\"Nagoya Grampus\", \"FC Tōkyō\"]",
+    "outcomePrices": "[\"0.015\", \"0.985\"]",
+    "volumeNum": 999.99,
+    "volume": "999.99",
+    "endDate": "2026-09-19T10:00:00Z",
+    "active": true,
+    "closed": false
+  },
+  {
+    "conditionId": "0x9999000000000000000000000000000000000000000000000000000000000002",
+    "id": "900002",
+    "question": "Perpetual market with no close date",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"0.5\", \"0.5\"]",
+    "volumeNum": 1234.0,
+    "volume": "1234.0",
+    "endDate": null,
+    "active": true,
+    "closed": false
+  },
+  {
+    "conditionId": "0x9999000000000000000000000000000000000000000000000000000000000003",
+    "id": "900003",
+    "question": "Already resolved market",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[\"1.0\", \"0.0\"]",
+    "volumeNum": 5000.0,
+    "volume": "5000.0",
+    "endDate": "2024-01-01T00:00:00Z",
+    "active": false,
+    "closed": true
+  },
+  {
+    "conditionId": "0x9999000000000000000000000000000000000000000000000000000000000004",
+    "id": "900004",
+    "question": "Malformed market with no prices",
+    "outcomes": "[\"Yes\", \"No\"]",
+    "outcomePrices": "[]",
+    "volumeNum": 10.0,
+    "volume": "10.0",
+    "endDate": "2026-12-31T00:00:00Z",
+    "active": true,
+    "closed": false
+  }
+]
