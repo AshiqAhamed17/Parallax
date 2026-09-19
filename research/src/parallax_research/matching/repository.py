@@ -150,5 +150,25 @@ def list_by_status(conn: sqlite3.Connection, status: str) -> list[MarketMatch]:
 
 
 def list_confirmed(conn: sqlite3.Connection) -> list[MarketMatch]:
-    """All `confirmed` matches — the only matches allowed to drive a divergence signal (§2.2)."""
-    return list_by_status(conn, STATUS_CONFIRMED)
+    """All `confirmed` matches — the only matches allowed to drive a divergence signal (§2.2).
+
+    This is the confirmed-only READ BOUNDARY: downstream signal code (Phase 9) must obtain its
+    matches through here (or gate individual ids through `is_confirmed`), never by reading
+    `market_matches` directly, so a `pending`/`rejected` row can never leak into a public signal.
+    A defensive re-filter guards the invariant against any future refactor of the query.
+    """
+    matches = list_by_status(conn, STATUS_CONFIRMED)
+    return [m for m in matches if m.status == STATUS_CONFIRMED]
+
+
+def is_confirmed(conn: sqlite3.Connection, match_id: int) -> bool:
+    """Whether `match_id` exists AND is confirmed — the per-match gate for signal code (§2.2).
+
+    Returns False for a pending, rejected, or nonexistent match, so a caller can cheaply refuse to
+    emit a signal for anything a human hasn't approved.
+    """
+    row = conn.execute(
+        "SELECT 1 FROM market_matches WHERE id = ? AND status = ?",
+        (match_id, STATUS_CONFIRMED),
+    ).fetchone()
+    return row is not None
