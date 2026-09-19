@@ -1,5 +1,12 @@
 """Market-matching layer: link Manifold markets to their second-source (Polymarket) equivalents."""
 
+from parallax_research.matching.fuzzy_match import (
+    Candidate,
+    Encoder,
+    SentenceTransformerEncoder,
+    generate_candidates,
+    store_candidates,
+)
 from parallax_research.matching.mapping_loader import (
     MappingEntry,
     MappingFile,
@@ -19,12 +26,16 @@ from parallax_research.matching.repository import (
 )
 
 __all__ = [
+    "Candidate",
+    "Encoder",
     "MappingEntry",
     "MappingFile",
     "MarketMatch",
+    "SentenceTransformerEncoder",
     "confirm",
     "ensure_market_matches",
     "find_match",
+    "generate_candidates",
     "get",
     "insert_candidate",
     "list_by_status",
@@ -32,4 +43,5 @@ __all__ = [
     "load_manual_mappings",
     "load_mapping_file",
     "reject",
+    "store_candidates",
 ]
