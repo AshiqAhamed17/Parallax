@@ -24,6 +24,10 @@ from parallax_research.matching.repository import (
     list_confirmed,
     reject,
 )
+from parallax_research.matching.review import (
+    ReviewSummary,
+    review_pending,
+)
 
 __all__ = [
     "Candidate",
@@ -31,6 +35,7 @@ __all__ = [
     "MappingEntry",
     "MappingFile",
     "MarketMatch",
+    "ReviewSummary",
     "SentenceTransformerEncoder",
     "confirm",
     "ensure_market_matches",
@@ -43,5 +48,6 @@ __all__ = [
     "load_manual_mappings",
     "load_mapping_file",
     "reject",
+    "review_pending",
     "store_candidates",
 ]
