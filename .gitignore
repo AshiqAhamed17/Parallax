@@ -35,5 +35,8 @@ build/
 .vscode/
 .idea/
 
-implementation.md 
+implementation.md
 tasks.md
+
+# Personal learning notes (local-only study trail)
+/learn/
