@@ -12,15 +12,21 @@ unit). We surface the disagreement as information; we never claim it's free mone
 `matching.list_confirmed`.
 
 - Task 9.1: detection (`detect_for_match`, `detect_divergences`).
+- Task 9.2: persistence into `arbitrage_signals` (`persist_signal`, `detect_and_persist`).
 """
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from parallax_research.matching.repository import MarketMatch, list_confirmed
+from parallax_research.storage import ensure_arbitrage_signals
+
+#: `arbitrage_signals.type` value for this detector.
+SIGNAL_TYPE = "cross_source_divergence"
 
 #: Default flag threshold: a 5-percentage-point gap between the two venues.
 DEFAULT_THRESHOLD = 0.05
@@ -118,3 +124,48 @@ def detect_divergences(
         if signal is not None:
             signals.append(signal)
     return signals
+
+
+def persist_signal(conn: sqlite3.Connection, signal: DivergenceSignal) -> int:
+    """Write one divergence signal into `arbitrage_signals` (Task 9.2). Returns the new row id.
+
+    `edge` stores the signed gap; `market_refs` is the JSON pair of market ids; `details_json`
+    carries both probabilities, the magnitude/direction, and the honest "not tradeable arbitrage"
+    note so a downstream reader (API/dashboard) can render it faithfully.
+    """
+    ensure_arbitrage_signals(conn)
+    details = json.dumps(
+        {
+            "p_manifold": signal.p_manifold,
+            "p_polymarket": signal.p_polymarket,
+            "divergence": signal.magnitude,
+            "direction": signal.direction,
+            "note": "divergence signal, not tradeable arbitrage",
+        }
+    )
+    cur = conn.execute(
+        "INSERT INTO arbitrage_signals (type, market_refs, edge, detected_at, details_json) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (
+            SIGNAL_TYPE,
+            json.dumps([signal.manifold_market_id, signal.polymarket_market_id]),
+            signal.edge,
+            signal.detected_at,
+            details,
+        ),
+    )
+    conn.commit()
+    return int(cur.lastrowid)
+
+
+def detect_and_persist(
+    conn: sqlite3.Connection,
+    *,
+    threshold: float = DEFAULT_THRESHOLD,
+    detected_at: str | None = None,
+) -> int:
+    """Detect divergences across confirmed matches and persist each. Returns the number written."""
+    signals = detect_divergences(conn, threshold=threshold, detected_at=detected_at)
+    for signal in signals:
+        persist_signal(conn, signal)
+    return len(signals)
