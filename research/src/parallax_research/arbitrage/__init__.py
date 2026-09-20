@@ -8,6 +8,10 @@ from parallax_research.arbitrage.cross_source_divergence import (
     detect_for_match,
     persist_signal,
 )
+from parallax_research.arbitrage.scheduler import (
+    run_detection_loop,
+    run_detection_once,
+)
 
 __all__ = [
     "SIGNAL_TYPE",
@@ -16,4 +20,6 @@ __all__ = [
     "detect_divergences",
     "detect_for_match",
     "persist_signal",
+    "run_detection_loop",
+    "run_detection_once",
 ]
