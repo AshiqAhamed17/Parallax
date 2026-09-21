@@ -29,6 +29,18 @@ FEATURE_COLUMNS = ["prob_velocity", "bet_arrival_rate", "realized_vol", "market_
 #: The supervised label (0 = resolved NO, 1 = resolved YES).
 LABEL_COLUMN = "outcome"
 
+_OUTPUT_COLUMNS = [
+    "market_id",
+    "ts_ns",
+    "prob_velocity",
+    "bet_arrival_rate",
+    "realized_vol",
+    "market_prob",
+    LABEL_COLUMN,
+]
+
+# `close_time` is selected only to enforce the anti-lookahead cutoff (Task 10.4); it's dropped
+# before returning so the output columns stay stable.
 _QUERY = """
 SELECT
     f.market_id                    AS market_id,
@@ -37,7 +49,8 @@ SELECT
     f.bet_arrival_rate             AS bet_arrival_rate,
     f.realized_vol                 AS realized_vol,
     p.probability                  AS market_prob,
-    m.resolved_outcome             AS outcome
+    m.resolved_outcome             AS outcome,
+    m.close_time                   AS close_time
 FROM feature_snapshots f
 JOIN markets m ON m.market_id = f.market_id
 LEFT JOIN probability_snapshots p
@@ -48,17 +61,33 @@ ORDER BY f.market_id, f.ts_ns
 """
 
 
-def extract_training_dataset(conn: sqlite3.Connection) -> pd.DataFrame:
+def extract_training_dataset(
+    conn: sqlite3.Connection, *, before_close_only: bool = True
+) -> pd.DataFrame:
     """Return the labeled training set for resolved Manifold markets.
 
     Columns: ``market_id, ts_ns, prob_velocity, bet_arrival_rate, realized_vol, market_prob,
     outcome``. Empty (with those columns) if there are no resolved markets yet.
+
+    **Anti-lookahead guard (Task 10.4):** with ``before_close_only=True`` (the default), feature
+    snapshots timestamped at or after the market's ``close_time`` are excluded — a model must only
+    train on information that existed strictly *before* the market closed, or its measured skill is
+    meaningless. Rows whose ``close_time`` can't be parsed are kept (no cutoff to apply). Pass
+    ``before_close_only=False`` only for deliberate diagnostics, never for a trusted calibration run.
     """
     df = pd.read_sql_query(_QUERY, conn)
     # Guarantee a stable dtype/shape even when empty, so downstream code can rely on the columns.
     if df.empty:
-        return pd.DataFrame(
-            columns=["market_id", "ts_ns", *FEATURE_COLUMNS[:-1], "market_prob", LABEL_COLUMN]
-        )
+        return pd.DataFrame(columns=_OUTPUT_COLUMNS)
+
     df[LABEL_COLUMN] = df[LABEL_COLUMN].astype(int)
-    return df
+
+    if before_close_only:
+        close_dt = pd.to_datetime(df["close_time"], utc=True, errors="coerce")
+        # Force nanosecond resolution before the int cast: pandas may parse to datetime64[us],
+        # whose int view would be microseconds and mismatch `ts_ns` (nanoseconds) by 1000x.
+        close_ns = close_dt.dt.tz_convert(None).astype("datetime64[ns]").astype("int64")
+        keep = close_dt.isna() | (df["ts_ns"].astype("int64") < close_ns)  # NaT -> no cutoff, keep
+        df = df[keep].reset_index(drop=True)
+
+    return df.drop(columns=["close_time"])
