@@ -37,6 +37,19 @@ CREATE TABLE IF NOT EXISTS feature_snapshots (
 )
 """
 
+BETS_DDL = """
+CREATE TABLE IF NOT EXISTS bets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    market_id TEXT NOT NULL,
+    ts_ns INTEGER NOT NULL,
+    prob_before REAL NOT NULL,
+    prob_after REAL NOT NULL,
+    amount REAL NOT NULL,
+    shares REAL NOT NULL,
+    is_limit_order INTEGER NOT NULL DEFAULT 0
+)
+"""
+
 # `probability_snapshots` is WRITTEN by the Rust collector; the research layer only READS it. FK to
 # `markets` omitted in this mirror (SQLite doesn't enforce FKs by default; tests don't need it).
 PROBABILITY_SNAPSHOTS_DDL = """
@@ -83,6 +96,11 @@ def ensure_feature_snapshots(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def ensure_bets(conn: sqlite3.Connection) -> None:
+    conn.execute(BETS_DDL)
+    conn.commit()
+
+
 def ensure_probability_snapshots(conn: sqlite3.Connection) -> None:
     conn.execute(PROBABILITY_SNAPSHOTS_DDL)
     conn.commit()
@@ -101,6 +119,7 @@ def ensure_arbitrage_signals(conn: sqlite3.Connection) -> None:
 def ensure_schema(conn: sqlite3.Connection) -> None:
     """Ensure every table the research layer touches exists (idempotent)."""
     ensure_markets(conn)
+    ensure_bets(conn)
     ensure_feature_snapshots(conn)
     ensure_probability_snapshots(conn)
     ensure_cross_source_snapshots(conn)
@@ -111,11 +130,13 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
 
 __all__ = [
     "ARBITRAGE_SIGNALS_DDL",
+    "BETS_DDL",
     "FEATURE_SNAPSHOTS_DDL",
     "MARKETS_DDL",
     "MODEL_PREDICTIONS_DDL",
     "PROBABILITY_SNAPSHOTS_DDL",
     "ensure_arbitrage_signals",
+    "ensure_bets",
     "ensure_cross_source_snapshots",
     "ensure_feature_snapshots",
     "ensure_market_matches",
