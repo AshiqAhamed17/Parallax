@@ -1,0 +1,31 @@
+# Correlated Manifold market groups + ordering constraints (test fixture for Task 12.1).
+groups:
+  - id: candidate-x-2028
+    description: "You can't win the general election without first winning the primary."
+    markets:
+      - key: primary
+        manifold_market_id: "mf-x-primary"
+        label: "X wins the primary"
+      - key: general
+        manifold_market_id: "mf-x-general"
+        label: "X wins the general"
+    constraints:
+      - lhs: general
+        op: "<="
+        rhs: primary
+        note: "P(win general) <= P(win primary)"
+
+  - id: team-a-tournament
+    description: "Winning the title implies reaching the final implies reaching the semifinal."
+    markets:
+      - key: semifinal
+        manifold_market_id: "mf-a-semi"
+      - key: final
+        manifold_market_id: "mf-a-final"
+      - key: title
+        manifold_market_id: "mf-a-title"
+    constraints:
+      - lhs: title
+        rhs: final
+      - lhs: final
+        rhs: semifinal
