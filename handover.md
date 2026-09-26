@@ -23,35 +23,43 @@ signaling quant-developer/low-latency-systems skill (not a trading bot, not a We
 - **Ashiq's background/career context**: `/Users/ashiq/Documents/projects/Ashiq/` (resume,
   dream-companies list, project-ideas.md, project-6-explained.md)
 
-## Current status (as of this handover)
+## Current status (as of this handover — updated mid-Phase-12)
 
 | Phase | Done | Model |
 |---|---|---|
-| 0 — Foundations | 5/6 (0.6 half-blocked, see below) | 🔵 Sonnet |
+| 0 — Foundations | 6/6 ✅ (0.6 resolved via the Polymarket pivot — see below) | 🔵 Sonnet |
 | 1 — Manifold Connectivity | 6/6 ✅ | 🔵 Sonnet |
 | 2 — Probability State Engine | 7/7 ✅ | 🟣 Opus |
 | 3 — Feature Engine | 4/4 ✅ | 🔵 Sonnet |
 | 4 — Collector & Storage | 5/5 ✅ | 🔵 Sonnet |
-| 5 — Latency Benchmark Harness | 0/4 — **next up** | 🟣 Opus |
-| 6 — Performance Optimization | 0/4 | 🟣 Opus |
-| 7 — Metaculus Adapter | 0/3 — blocked on Task 0.6 | 🔵 Sonnet |
-| 8–16 | not started | mixed, see `tasks.md` |
+| 5 — Latency Benchmark Harness | 4/4 ✅ | 🟣 Opus |
+| 6 — Performance Optimization | 4/4 ✅ | 🟣 Opus |
+| 7 — Second-Source (Polymarket) Adapter | 3/3 ✅ (pivoted from Metaculus) | 🔵 Sonnet |
+| 8 — Market Matching Layer | 5/5 ✅ | 🟣 Opus |
+| 9 — Cross-Source Divergence | 3/3 ✅ | 🔵 Sonnet |
+| 10 — Calibration & Probability Model | 5/5 ✅ | 🟣 Opus |
+| 11 — Backtester | 5/5 ✅ | 🟣 Opus |
+| 12 — Logical-Constraint Arbitrage | 1/4 — **12.1 done; 12.2 next up** | 🟣 Opus |
+| 13–16 | not started | mixed, see `tasks.md` |
 
-**82 tasks total across 17 phases.** `tasks.md` checkboxes are the authoritative progress tracker
-— always re-check them (`grep -n "Task X\." tasks.md`) rather than trusting this table if time has
-passed, since it can go stale.
+**Next task: Task 12.2 (curate 2–3 real correlated Manifold market groups with documented
+reasoning).** Then 12.3 (violation detector) and 12.4 (wire into scheduler + backtest).
 
-**One open action item that's yours, not Claude's**: Task 0.6's Metaculus half is blocked —
-Claude can't verify their API/ToS because their site hard-blocks automated tools (Cloudflare
-challenge). You need to sign up on metaculus.com in a real browser and check their API docs/terms
-before Phase 7 can start. Details in `docs/metaculus-tos-check.md`.
+`tasks.md` checkboxes are the authoritative progress tracker — always re-check them
+(`grep -n "^- \[.\] \*\*Task" tasks.md`) rather than trusting this table.
+
+**Task 0.6 is RESOLVED (no longer your action item).** The Metaculus half was blocked (Cloudflare
+bot-challenge), so it was verified in a browser and **rejected** — Metaculus's ToU forbids AI/ML use
++ public redistribution of its data. The second source **pivoted to Polymarket**, whose public API
+is open and whose ToU permits non-commercial informational use. See `implementation.md` §15 and
+`docs/metaculus-tos-check.md`. No open human action items remain.
 
 ## How to start a new session effectively
 
 Open Claude Code in `/Users/ashiq/Documents/projects/Parallax` and say something like:
 
-> "Continuing Parallax. Read implementation.md and tasks.md fully, check which tasks are done,
-> and continue with the next unchecked task in Phase 5."
+> "Continuing Parallax. Read handover.md, implementation.md, and tasks.md fully, check which tasks
+> are done, and continue with the next unchecked task in Phase 12 (12.2). Keep using Opus."
 
 Claude should then, per-task, follow the pattern used throughout this project so far:
 1. Read the exact task spec in `tasks.md` (and any referenced section of `implementation.md`).
@@ -87,10 +95,31 @@ look-ahead-bias risk), Sonnet for well-specified integration/mechanical/UI work.
   pushing; if the active account isn't `AshiqAhamed17`, run:
   `gh auth switch --user AshiqAhamed17 && gh auth setup-git`
 - **`implementation.md`/`tasks.md` are gitignored on purpose** (Ashiq's choice) — don't try to
-  force-add them, and don't be surprised they're not on GitHub.
+  force-add them, and don't be surprised they're not on GitHub. **`learn/` is also gitignored** —
+  local-only study notes (docs 01–03 written: what-is-parallax, architecture, prediction-markets).
 - Some early commits in this repo's history don't build in perfect isolation (a couple of
   dependency-batching slips where a module was declared before its file existed in the same
   commit) — HEAD always builds; the intermediate history doesn't need to be pristine.
+
+## What's built + how to verify (as of mid-Phase-12)
+
+- **Rust side (Phases 0–6): DONE.** `cargo test --workspace` + `cargo clippy --workspace
+  --all-targets -- -D warnings` are green. Perf: v1→v3 optimization gave +175% throughput (70k→194k
+  ev/s), tail 84ms→3.1ms; numbers in `benchmarks/`. The Phase 2.6 differential proptest
+  (`PROPTEST_CASES=10000 cargo test -p probability-engine differential`) is the correctness gate for
+  any hot-path change.
+- **Python research side (Phases 7–11 + 12.1): DONE.** Run from `research/`: `uv run ruff check .`
+  and `uv run pytest` — currently **138 tests, all green**. Package: `research/src/parallax_research/`
+  = `schemas.py`, `storage.py` (all table DDLs + `ensure_schema`), `adapters/` (polymarket + poller),
+  `matching/` (repository, mapping_loader, fuzzy_match, review), `arbitrage/`
+  (cross_source_divergence, scheduler, **constraints.py** = 12.1), `calibration/` (dataset, model,
+  scoring, run, edge), `backtester/` (replay, fill, execution, pnl). Committed reports in `reports/`
+  (calibration-v1, backtest-synthetic, backtest-validation).
+- **Known data gap (recurring caveat):** the Rust collector doesn't yet backfill Manifold market
+  question-text or resolution (Task 4.2 note), so there's no real resolved-Manifold dataset in the
+  DB yet. Phases 8.4 / 9.3 / 10.4 / 11.4 were therefore demonstrated on clearly-labeled synthetic or
+  seeded data, EXCEPT 11.5 which validated the backtester against a **real** resolved Manifold market
+  fetched live (`reports/backtest-validation.md`, PASS). This gap doesn't block Phase 12.
 
 ## Repository layout (Rust workspace + Python + Next.js)
 
@@ -105,8 +134,8 @@ Parallax/
 │   ├── probability-engine/# MarketTracker, ProbabilityEngine, BetHistory (done, Phase 2)
 │   ├── feature-engine/    # prob_velocity, bet_arrival_rate, realized_volatility (done, Phase 3)
 │   ├── collector/         # the real ingestion binary — migration/ingest/archive/health (done, Phase 4)
-│   └── bench-harness/     # Phase 5, not started
-├── research/               # Python package (uv), scaffolded, mostly unbuilt (Phase 7+)
+│   └── bench-harness/     # synthetic load gen + latency harness + criterion (done, Phases 5–6)
+├── research/               # Python package (uv) — Phases 7–11 + 12.1 DONE (see "What's built" above)
 ├── api/                    # FastAPI, not started (Phase 13)
 ├── dashboard/               # Next.js, scaffolded with disclaimer banner only (Phase 14)
 ├── deploy/                  # systemd/launchd/nohup configs for the collector (done, Task 4.5)
