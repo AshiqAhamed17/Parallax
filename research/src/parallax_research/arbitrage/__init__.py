@@ -18,11 +18,13 @@ from parallax_research.arbitrage.cross_source_divergence import (
 from parallax_research.arbitrage.logical_constraint import (
     DEFAULT_COST_PER_LEG,
     ConstraintViolation,
+    detect_and_persist_violations,
     detect_for_group,
     detect_violations,
     evaluate_constraint,
     evaluate_group,
     latest_probabilities,
+    persist_violation,
 )
 from parallax_research.arbitrage.logical_constraint import (
     SIGNAL_TYPE as LOGICAL_CONSTRAINT_SIGNAL_TYPE,
@@ -43,6 +45,7 @@ __all__ = [
     "DivergenceSignal",
     "OrderingConstraint",
     "detect_and_persist",
+    "detect_and_persist_violations",
     "detect_divergences",
     "detect_for_group",
     "detect_for_match",
@@ -52,6 +55,7 @@ __all__ = [
     "latest_probabilities",
     "load_constraint_groups",
     "persist_signal",
+    "persist_violation",
     "run_detection_loop",
     "run_detection_once",
 ]

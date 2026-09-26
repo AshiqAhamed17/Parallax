@@ -39,11 +39,10 @@ signaling quant-developer/low-latency-systems skill (not a trading bot, not a We
 | 9 — Cross-Source Divergence | 3/3 ✅ | 🔵 Sonnet |
 | 10 — Calibration & Probability Model | 5/5 ✅ | 🟣 Opus |
 | 11 — Backtester | 5/5 ✅ | 🟣 Opus |
-| 12 — Logical-Constraint Arbitrage | 1/4 — **12.1 done; 12.2 next up** | 🟣 Opus |
+| 12 — Logical-Constraint Arbitrage | 4/4 ✅ | 🟣 Opus |
 | 13–16 | not started | mixed, see `tasks.md` |
 
-**Next task: Task 12.2 (curate 2–3 real correlated Manifold market groups with documented
-reasoning).** Then 12.3 (violation detector) and 12.4 (wire into scheduler + backtest).
+**Phase 12 complete (4/4). Next up: Phase 13 — Public API Layer (Task 13.1, FastAPI scaffold).**
 
 `tasks.md` checkboxes are the authoritative progress tracker — always re-check them
 (`grep -n "^- \[.\] \*\*Task" tasks.md`) rather than trusting this table.

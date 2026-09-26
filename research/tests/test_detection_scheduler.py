@@ -4,7 +4,11 @@ import sqlite3
 
 import pytest
 
-from parallax_research.arbitrage import run_detection_loop, run_detection_once
+from parallax_research.arbitrage import (
+    CorrelatedMarketGroupsConfig,
+    run_detection_loop,
+    run_detection_once,
+)
 from parallax_research.matching.repository import confirm, insert_candidate
 from parallax_research.storage import ensure_schema
 
@@ -63,4 +67,54 @@ def test_loop_writes_nothing_without_confirmed_divergences(conn):
     _seed_confirmed_divergence(conn, "mf-c", "0xc", 0.50, 0.51)
     runs = run_detection_loop(conn, interval_secs=0, threshold=0.05, max_runs=2)
     assert runs == 2
+    assert _signal_count(conn) == 0
+
+
+# ---- logical-constraint detector wired into the same scheduled pass (Task 12.4) -------------------
+
+
+def _constraint_config():
+    return CorrelatedMarketGroupsConfig.model_validate(
+        {
+            "groups": [
+                {
+                    "id": "g",
+                    "description": "high <= low",
+                    "markets": [
+                        {"key": "low", "manifold_market_id": "mf-low"},
+                        {"key": "high", "manifold_market_id": "mf-high"},
+                    ],
+                    "constraints": [{"lhs": "high", "op": "<=", "rhs": "low"}],
+                }
+            ]
+        }
+    )
+
+
+def _seed_constraint_breach(conn):
+    conn.execute(
+        "INSERT INTO probability_snapshots (market_id, ts_ns, probability) VALUES (?, ?, ?)",
+        ("mf-high", 1000, 0.60),
+    )
+    conn.execute(
+        "INSERT INTO probability_snapshots (market_id, ts_ns, probability) VALUES (?, ?, ?)",
+        ("mf-low", 1000, 0.45),
+    )
+    conn.commit()
+
+
+def test_run_once_also_runs_constraint_detector(conn):
+    _seed_confirmed_divergence(conn, "mf-a", "0xa", 0.30, 0.55)  # 1 divergence signal
+    _seed_constraint_breach(conn)  # net +0.11 → 1 actionable constraint signal
+    n = run_detection_once(
+        conn, threshold=0.05, detected_at=STAMP, constraint_config=_constraint_config()
+    )
+    assert n == 2  # divergence + logical-constraint
+    types = {r[0] for r in conn.execute("SELECT type FROM arbitrage_signals").fetchall()}
+    assert types == {"cross_source_divergence", "logical_constraint"}
+
+
+def test_run_once_without_config_skips_constraint_detector(conn):
+    _seed_constraint_breach(conn)  # a breach exists, but no config supplied
+    assert run_detection_once(conn, threshold=0.05, detected_at=STAMP) == 0
     assert _signal_count(conn) == 0

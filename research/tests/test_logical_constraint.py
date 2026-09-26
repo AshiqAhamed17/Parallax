@@ -4,6 +4,7 @@ Hand-worked violating and non-violating examples over the pure evaluator, plus t
 reading latest probabilities from `probability_snapshots`. In-memory SQLite, no network.
 """
 
+import json
 import sqlite3
 
 import pytest
@@ -12,12 +13,14 @@ from parallax_research.arbitrage import (
     DEFAULT_COST_PER_LEG,
     CorrelatedMarketGroup,
     CorrelatedMarketGroupsConfig,
+    detect_and_persist_violations,
     detect_for_group,
     detect_violations,
     evaluate_constraint,
     evaluate_group,
+    persist_violation,
 )
-from parallax_research.storage import ensure_probability_snapshots
+from parallax_research.storage import ensure_probability_snapshots, ensure_schema
 
 STAMP = "2026-09-26T12:00:00+00:00"
 
@@ -184,3 +187,63 @@ def test_detect_violations_across_config(conn):
     _seed(conn, "mf-b", 0.30, 1_000)
     violations = detect_violations(conn, config, detected_at=STAMP)
     assert [v.group_id for v in violations] == ["btc"]
+
+
+# ---- persistence (Task 12.4) ---------------------------------------------------------------------
+
+
+@pytest.fixture
+def full_conn():
+    c = sqlite3.connect(":memory:")
+    ensure_schema(c)
+    yield c
+    c.close()
+
+
+def _signals(conn):
+    return conn.execute(
+        "SELECT type, market_refs, edge, detected_at, details_json FROM arbitrage_signals"
+    ).fetchall()
+
+
+def test_persist_violation_row_shape(full_conn):
+    group = _group_le()
+    v = evaluate_constraint(group, group.constraints[0], 0.60, 0.45, detected_at=STAMP)
+    row_id = persist_violation(full_conn, v)
+    assert row_id == 1
+    rows = _signals(full_conn)
+    assert len(rows) == 1
+    type_, refs, edge, detected_at, details_json = rows[0]
+    assert type_ == "logical_constraint"
+    assert json.loads(refs) == ["mf-high", "mf-low"]
+    assert edge == pytest.approx(0.11)  # net violation
+    assert detected_at == STAMP
+    details = json.loads(details_json)
+    assert details["constraint"] == "high <= low"
+    assert details["overpriced"] == "high"
+    assert details["net_violation"] == pytest.approx(0.11)
+
+
+def test_detect_and_persist_actionable_only_by_default(full_conn):
+    config = CorrelatedMarketGroupsConfig(groups=[_group_le()])
+    # Breached by only 0.03 → net -0.01, not actionable → nothing persisted by default.
+    _seed(full_conn, "mf-high", 0.48, 1_000)
+    _seed(full_conn, "mf-low", 0.45, 1_000)
+    assert detect_and_persist_violations(full_conn, config, detected_at=STAMP) == 0
+    assert _signals(full_conn) == []
+    # Same breach recorded when actionable_only=False.
+    assert (
+        detect_and_persist_violations(
+            full_conn, config, detected_at=STAMP, actionable_only=False
+        )
+        == 1
+    )
+    assert len(_signals(full_conn)) == 1
+
+
+def test_detect_and_persist_writes_actionable(full_conn):
+    config = CorrelatedMarketGroupsConfig(groups=[_group_le()])
+    _seed(full_conn, "mf-high", 0.60, 1_000)  # net +0.11 → actionable
+    _seed(full_conn, "mf-low", 0.45, 1_000)
+    assert detect_and_persist_violations(full_conn, config, detected_at=STAMP) == 1
+    assert len(_signals(full_conn)) == 1

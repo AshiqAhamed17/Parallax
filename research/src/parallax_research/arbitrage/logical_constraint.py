@@ -27,6 +27,7 @@ executable free money. Unlike the cross-source divergence signal, though, this o
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -37,6 +38,7 @@ from parallax_research.arbitrage.constraints import (
     CorrelatedMarketGroupsConfig,
     OrderingConstraint,
 )
+from parallax_research.storage import ensure_arbitrage_signals
 
 #: `arbitrage_signals.type` value for this detector (used by the Task 12.4 persistence layer).
 SIGNAL_TYPE = "logical_constraint"
@@ -213,3 +215,66 @@ def detect_violations(
             detect_for_group(conn, group, cost_per_leg=cost_per_leg, detected_at=stamp)
         )
     return violations
+
+
+def persist_violation(conn: sqlite3.Connection, violation: ConstraintViolation) -> int:
+    """Write one logical-constraint violation into `arbitrage_signals` (Task 12.4). Returns row id.
+
+    `type='logical_constraint'`; `edge` stores the signed *net* violation (size after costs);
+    `market_refs` is the JSON `[lhs_market_id, rhs_market_id]` pair; `details_json` carries the
+    constraint, both probabilities, gross/cost/net, the over/underpriced legs, and the honest
+    "not tradeable arbitrage" note so a downstream reader (API/dashboard) can render it faithfully.
+    """
+    ensure_arbitrage_signals(conn)
+    details = json.dumps(
+        {
+            "group_id": violation.group_id,
+            "constraint": f"{violation.lhs_key} {violation.op} {violation.rhs_key}",
+            "p_lhs": violation.p_lhs,
+            "p_rhs": violation.p_rhs,
+            "gross_violation": violation.gross_violation,
+            "cost": violation.cost,
+            "net_violation": violation.net_violation,
+            "overpriced": violation.overpriced_key,
+            "underpriced": violation.underpriced_key,
+            "note": "logical-constraint violation, not tradeable arbitrage",
+        }
+    )
+    cur = conn.execute(
+        "INSERT INTO arbitrage_signals (type, market_refs, edge, detected_at, details_json) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (
+            SIGNAL_TYPE,
+            json.dumps([violation.lhs_market_id, violation.rhs_market_id]),
+            violation.net_violation,
+            violation.detected_at,
+            details,
+        ),
+    )
+    conn.commit()
+    return int(cur.lastrowid)
+
+
+def detect_and_persist_violations(
+    conn: sqlite3.Connection,
+    config: CorrelatedMarketGroupsConfig,
+    *,
+    cost_per_leg: float = DEFAULT_COST_PER_LEG,
+    detected_at: str | None = None,
+    actionable_only: bool = True,
+) -> int:
+    """Detect constraint violations across a config and persist them. Returns the number written.
+
+    By default only *actionable* breaches (net > 0 after costs) are persisted — a breach costs would
+    eat is real but not worth surfacing. Pass `actionable_only=False` to record every breach.
+    """
+    violations = detect_violations(
+        conn, config, cost_per_leg=cost_per_leg, detected_at=detected_at
+    )
+    written = 0
+    for violation in violations:
+        if actionable_only and not violation.is_actionable:
+            continue
+        persist_violation(conn, violation)
+        written += 1
+    return written
