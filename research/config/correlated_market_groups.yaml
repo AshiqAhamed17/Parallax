@@ -1,0 +1,101 @@
+# Curated correlated Manifold market groups (Task 12.2).
+#
+# These are REAL, currently-open binary markets on Manifold, hand-picked so that each ordering
+# constraint is *logically provable* (not merely correlated) — the violation detector (Task 12.3)
+# can therefore treat any breach as a genuine mispricing, net of costs, rather than a modelling
+# guess. A constraint `{lhs, op, rhs}` means `P(lhs) op P(rhs)` must hold.
+#
+# Every market id below was verified live against https://api.manifold.markets/v0/market/<id>
+# (open, unresolved, binary) at the snapshot recorded in README.md. Curation methodology, the live
+# probability snapshot, and the per-constraint reasoning are documented in config/README.md.
+groups:
+  # ---------------------------------------------------------------------------------------------
+  # Group 1 — Bitcoin end-of-2026 price thresholds (magnitude nesting).
+  # A single underlying (BTC price at the end of 2026) sliced at rising thresholds. If BTC ends
+  # 2026 above a higher threshold it is necessarily above every lower one, so the "yes" probability
+  # must be monotonically non-increasing in the threshold.
+  # ---------------------------------------------------------------------------------------------
+  - id: btc-eoy-2026-thresholds
+    description: >-
+      Bitcoin's end-of-2026 price sliced at three thresholds. Being above a higher price at year
+      end implies being above every lower price, so P must fall as the threshold rises.
+    markets:
+      - key: gt_66666
+        manifold_market_id: "26QhQQ6hsQ"
+        label: "BTC higher than $66,666 at the end of 2026"
+      - key: gt_77777
+        manifold_market_id: "Ophn0RNnRL"
+        label: "BTC higher than $77,777 at the end of 2026"
+      - key: gt_88888
+        manifold_market_id: "2q2qZNLRlE"
+        label: "BTC higher than $88,888 at the end of 2026"
+    constraints:
+      - lhs: gt_77777
+        op: "<="
+        rhs: gt_66666
+        note: "BTC > $77,777 at EOY 2026 implies BTC > $66,666 at EOY 2026, so P(>77,777) <= P(>66,666)."
+      - lhs: gt_88888
+        op: "<="
+        rhs: gt_77777
+        note: "BTC > $88,888 at EOY 2026 implies BTC > $77,777 at EOY 2026, so P(>88,888) <= P(>77,777)."
+
+  # ---------------------------------------------------------------------------------------------
+  # Group 2 — AGI arrival deadlines (temporal nesting).
+  # One event ("we get AGI", identical resolution text) asked at four successively later
+  # deadlines, all authored by the same creator (RemNi) so the resolution criterion is fixed.
+  # Happening before an earlier deadline implies happening before every later one, so P must be
+  # monotonically non-decreasing as the deadline moves later.
+  # ---------------------------------------------------------------------------------------------
+  - id: agi-arrival-2027-deadlines
+    description: >-
+      "Will we get AGI before <date>?" asked at four rising deadlines by the same creator with an
+      identical AGI definition. AGI before an earlier date implies AGI before a later date, so P
+      must rise as the deadline moves later.
+    markets:
+      - key: by_jul_2027
+        manifold_market_id: "ysAmD1AL7KSPxg0FAcQ3"
+        label: "AGI before July 1st 2027"
+      - key: by_aug_2027
+        manifold_market_id: "1T9iu2LX27d6wbCrO181"
+        label: "AGI before August 1st 2027"
+      - key: by_sep_2027
+        manifold_market_id: "nmBdKE7ODKOGMYaD7QVF"
+        label: "AGI before September 1st 2027"
+      - key: by_oct_2027
+        manifold_market_id: "bMiXjmTvOXVkekHs8hqO"
+        label: "AGI before October 1st 2027"
+    constraints:
+      - lhs: by_jul_2027
+        op: "<="
+        rhs: by_aug_2027
+        note: "AGI before Jul 1 implies AGI before Aug 1, so P(by Jul) <= P(by Aug)."
+      - lhs: by_aug_2027
+        op: "<="
+        rhs: by_sep_2027
+        note: "AGI before Aug 1 implies AGI before Sep 1, so P(by Aug) <= P(by Sep)."
+      - lhs: by_sep_2027
+        op: "<="
+        rhs: by_oct_2027
+        note: "AGI before Sep 1 implies AGI before Oct 1, so P(by Sep) <= P(by Oct)."
+
+  # ---------------------------------------------------------------------------------------------
+  # Group 3 — JD Vance 2028 nomination vs presidency (event-subset / conditional nesting).
+  # Both markets authored by the same creator (LarsDoucet). Winning the presidency requires first
+  # being nominated, so the winning event is a strict subset of the nomination event.
+  # ---------------------------------------------------------------------------------------------
+  - id: vance-2028-nomination-presidency
+    description: >-
+      JD Vance cannot win the 2028 presidency without first being the Republican nominee, so the
+      "wins presidency" event is a subset of the "is nominated" event: P(wins) <= P(nominated).
+    markets:
+      - key: nominated
+        manifold_market_id: "ulm6rrplx5"
+        label: "JD Vance nominated for President (2028)"
+      - key: presidency
+        manifold_market_id: "wpdomi6nif"
+        label: "JD Vance wins the 2028 US Presidential Election"
+    constraints:
+      - lhs: presidency
+        op: "<="
+        rhs: nominated
+        note: "Winning the presidency implies being nominated, so P(wins presidency) <= P(nominated)."
