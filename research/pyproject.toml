@@ -8,12 +8,14 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.115.0",
     "httpx>=0.28.1",
     "numpy>=2.5.2",
     "pandas>=3.0.5",
     "pydantic>=2.13.5",
     "pyyaml>=6.0.3",
     "scikit-learn>=1.9.1",
+    "uvicorn>=0.34.0",
 ]
 
 [build-system]
