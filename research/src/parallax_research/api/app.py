@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
 from parallax_research.api.middleware import FixedWindowRateLimiter, TTLResponseCache
@@ -54,9 +55,17 @@ DEFAULT_CACHE_TTL_SECS = 5.0
 DEFAULT_RATE_LIMIT_MAX = 120
 DEFAULT_RATE_LIMIT_WINDOW_SECS = 60.0
 
+#: Default browser origins allowed to call the API (overridable via `PARALLAX_CORS_ORIGINS`).
+DEFAULT_CORS_ORIGINS = ["http://localhost:3000"]
+
 
 def _default_db_path() -> str:
     return os.environ.get("PARALLAX_DB", DEFAULT_DB_PATH)
+
+
+def _default_cors_origins() -> list[str]:
+    raw = os.environ.get("PARALLAX_CORS_ORIGINS")
+    return [o.strip() for o in raw.split(",") if o.strip()] if raw else DEFAULT_CORS_ORIGINS
 
 
 def _default_benchmarks_dir() -> Path:
@@ -164,6 +173,7 @@ def create_app(
     cache_ttl_secs: float = DEFAULT_CACHE_TTL_SECS,
     rate_limit_max: int = DEFAULT_RATE_LIMIT_MAX,
     rate_limit_window_secs: float = DEFAULT_RATE_LIMIT_WINDOW_SECS,
+    cors_origins: list[str] | None = None,
     time_fn: Callable[[], float] = time.monotonic,
 ) -> FastAPI:
     """Build the FastAPI app.
@@ -185,7 +195,7 @@ def create_app(
     )
     app.state.db_path = resolved_db
 
-    # --- Task 13.5: rate limiting (outermost) + response caching (inner) middleware ---------------
+    # --- Task 13.5: rate limiting + response caching (inner) middleware ---------------------------
     # Added in this order so the rate limiter wraps the cache and is checked first (Starlette applies
     # the last-added middleware outermost).
     if cache_ttl_secs > 0:
@@ -225,6 +235,15 @@ def create_app(
                     headers={"Retry-After": str(int(rate_limit_window_secs))},
                 )
             return await call_next(request)
+
+    # CORS registered LAST so it is the OUTERMOST layer — it adds its headers after the cache
+    # middleware reconstructs a response, otherwise those headers would be stripped.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins if cors_origins is not None else _default_cors_origins(),
+        allow_methods=["GET", "OPTIONS"],
+        allow_headers=["*"],
+    )
 
     @app.get("/health", response_model=HealthResponse)
     def health() -> HealthResponse:
