@@ -40,13 +40,15 @@ signaling quant-developer/low-latency-systems skill (not a trading bot, not a We
 | 10 — Calibration & Probability Model | 5/5 ✅ | 🟣 Opus |
 | 11 — Backtester | 5/5 ✅ | 🟣 Opus |
 | 12 — Logical-Constraint Arbitrage | 4/4 ✅ | 🟣 Opus |
-| 13 — Public API Layer | 2/5 — **13.1, 13.2 done; 13.3 next up** | 🔵 Sonnet (done on Opus per request) |
+| 13 — Public API Layer | 3/5 — **13.1–13.3 done; 13.4 next up** | 🔵 Sonnet (done on Opus per request) |
 | 14–16 | not started | mixed, see `tasks.md` |
 
-**Phase 12 complete. Phase 13 in progress (13.1/13.2 done). Next up: Task 13.3 (arbitrage/divergence
-endpoint).** Note: the FastAPI app lives in `research/src/parallax_research/api/` (so it's covered by
-the single `uv run ruff`/`pytest` from `research/`); `api/main.py` at repo root is a thin
-`uvicorn api.main:app` shim. `fastapi`+`uvicorn` are now deps in `research/pyproject.toml`.
+**Phase 12 complete. Phase 13 in progress (13.1–13.3 done). Next up: Task 13.4 (benchmarks &
+backtests endpoints serving the static reports).** Note: the FastAPI app lives in
+`research/src/parallax_research/api/` (so it's covered by the single `uv run ruff`/`pytest` from
+`research/`); `api/main.py` at repo root is a thin `uvicorn api.main:app` shim. `fastapi`+`uvicorn`
+are now deps in `research/pyproject.toml`. Endpoints so far: `/health`, `/markets`, `/markets/{id}`,
+`/arbitrage` (paginated, both signal types).
 
 `tasks.md` checkboxes are the authoritative progress tracker — always re-check them
 (`grep -n "^- \[.\] \*\*Task" tasks.md`) rather than trusting this table.

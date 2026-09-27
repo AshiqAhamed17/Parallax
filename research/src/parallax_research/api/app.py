@@ -7,6 +7,8 @@ bet-placement endpoints, ever (constraint §2.1).
 - Task 13.1: app scaffold + `/health`.
 - Task 13.2: `GET /markets` and `GET /markets/{market_id}` — market metadata + latest probability
   state + latest model prediction.
+- Task 13.3: `GET /arbitrage` — recent signals from both detectors (logical-constraint +
+  cross-source divergence), newest first, paginated, optionally filtered by `type`.
 
 The app is built by `create_app(db_path)` so tests can point it at a temporary seeded database; the
 top-level `api/main.py` entrypoint and `parallax_research.api.app` (default DB from `PARALLAX_DB`)
@@ -15,15 +17,23 @@ use the production database path.
 
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 
-from parallax_research.api.models import HealthResponse, MarketOut, ModelPredictionOut
+from parallax_research.api.models import (
+    ArbitrageSignalOut,
+    HealthResponse,
+    MarketOut,
+    ModelPredictionOut,
+    PaginatedSignals,
+    SignalType,
+)
 from parallax_research.storage import ensure_schema
 
 #: Default database path when none is supplied (overridable via the `PARALLAX_DB` env var).
@@ -84,6 +94,17 @@ def _market_from_row(conn: sqlite3.Connection, row: sqlite3.Row) -> MarketOut:
     )
 
 
+def _signal_from_row(row: sqlite3.Row) -> ArbitrageSignalOut:
+    return ArbitrageSignalOut(
+        id=int(row["id"]),
+        type=row["type"],
+        market_refs=json.loads(row["market_refs"]),
+        edge=float(row["edge"]),
+        detected_at=row["detected_at"],
+        details=json.loads(row["details_json"]),
+    )
+
+
 # Each market joined to its single most-recent probability snapshot (LEFT JOIN so markets with no
 # snapshot yet still appear, with null probability/last_updated_ns).
 _MARKET_SELECT = """
@@ -128,6 +149,34 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         if row is None:
             raise HTTPException(status_code=404, detail=f"market {market_id!r} not found")
         return _market_from_row(conn, row)
+
+    @app.get("/arbitrage", response_model=PaginatedSignals)
+    def list_arbitrage_signals(
+        conn: ConnDep,
+        limit: Annotated[int, Query(ge=1, le=200)] = 50,
+        offset: Annotated[int, Query(ge=0)] = 0,
+        signal_type: Annotated[SignalType | None, Query(alias="type")] = None,
+    ) -> PaginatedSignals:
+        where, params = "", []
+        if signal_type is not None:
+            where = " WHERE type = ?"
+            params.append(signal_type)
+
+        total = conn.execute(
+            "SELECT COUNT(*) FROM arbitrage_signals" + where, params
+        ).fetchone()[0]
+        rows = conn.execute(
+            "SELECT id, type, market_refs, edge, detected_at, details_json "
+            "FROM arbitrage_signals" + where
+            + " ORDER BY detected_at DESC, id DESC LIMIT ? OFFSET ?",
+            [*params, limit, offset],
+        ).fetchall()
+        return PaginatedSignals(
+            items=[_signal_from_row(row) for row in rows],
+            total=int(total),
+            limit=limit,
+            offset=offset,
+        )
 
     return app
 

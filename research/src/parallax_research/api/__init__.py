@@ -2,16 +2,22 @@
 
 from parallax_research.api.app import DEFAULT_DB_PATH, app, create_app
 from parallax_research.api.models import (
+    ArbitrageSignalOut,
     HealthResponse,
     MarketOut,
     ModelPredictionOut,
+    PaginatedSignals,
+    SignalType,
 )
 
 __all__ = [
     "DEFAULT_DB_PATH",
+    "ArbitrageSignalOut",
     "HealthResponse",
     "MarketOut",
     "ModelPredictionOut",
+    "PaginatedSignals",
+    "SignalType",
     "app",
     "create_app",
 ]

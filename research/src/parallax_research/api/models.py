@@ -7,7 +7,12 @@ market data (constraint §2.1).
 
 from __future__ import annotations
 
+from typing import Any, Literal
+
 from pydantic import BaseModel
+
+#: The two detector families recorded in `arbitrage_signals.type`.
+SignalType = Literal["logical_constraint", "cross_source_divergence"]
 
 
 class HealthResponse(BaseModel):
@@ -40,3 +45,26 @@ class MarketOut(BaseModel):
     #: `ts_ns` of the latest probability snapshot (None if none collected yet).
     last_updated_ns: int | None = None
     prediction: ModelPredictionOut | None = None
+
+
+class ArbitrageSignalOut(BaseModel):
+    """One row from `arbitrage_signals`, from either detector (Phase 9 or Phase 12)."""
+
+    id: int
+    type: SignalType
+    #: Market ids involved (parsed from the stored JSON array).
+    market_refs: list[str]
+    #: Signed edge/violation size the detector recorded.
+    edge: float
+    detected_at: str
+    #: Detector-specific payload (parsed from the stored `details_json`).
+    details: dict[str, Any]
+
+
+class PaginatedSignals(BaseModel):
+    """A page of arbitrage/divergence signals plus the total available (for the dashboard pager)."""
+
+    items: list[ArbitrageSignalOut]
+    total: int
+    limit: int
+    offset: int
