@@ -9,6 +9,9 @@ bet-placement endpoints, ever (constraint §2.1).
   state + latest model prediction.
 - Task 13.3: `GET /arbitrage` — recent signals from both detectors (logical-constraint +
   cross-source divergence), newest first, paginated, optionally filtered by `type`.
+- Task 13.4: `GET /benchmarks` and `GET /backtests` — the committed static Markdown reports from
+  Phases 5/6 (latency) and Phases 11/12 (backtests) respectively.
+- Task 13.5: TTL response caching + fixed-window rate limiting, added as HTTP middleware.
 
 The app is built by `create_app(db_path)` so tests can point it at a temporary seeded database; the
 top-level `api/main.py` entrypoint and `parallax_research.api.app` (default DB from `PARALLAX_DB`)
@@ -20,18 +23,22 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
-from collections.abc import Iterator
+import time
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse, Response
 
+from parallax_research.api.middleware import FixedWindowRateLimiter, TTLResponseCache
 from parallax_research.api.models import (
     ArbitrageSignalOut,
     HealthResponse,
     MarketOut,
     ModelPredictionOut,
     PaginatedSignals,
+    ReportOut,
     SignalType,
 )
 from parallax_research.storage import ensure_schema
@@ -39,9 +46,40 @@ from parallax_research.storage import ensure_schema
 #: Default database path when none is supplied (overridable via the `PARALLAX_DB` env var).
 DEFAULT_DB_PATH = "../data/parallax.db"
 
+#: Repo root (…/Parallax), from which the committed `benchmarks/` and `reports/` dirs are served.
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+
+#: Default response-cache TTL and rate-limit settings (all overridable via `create_app`).
+DEFAULT_CACHE_TTL_SECS = 5.0
+DEFAULT_RATE_LIMIT_MAX = 120
+DEFAULT_RATE_LIMIT_WINDOW_SECS = 60.0
+
 
 def _default_db_path() -> str:
     return os.environ.get("PARALLAX_DB", DEFAULT_DB_PATH)
+
+
+def _default_benchmarks_dir() -> Path:
+    return Path(os.environ.get("PARALLAX_BENCHMARKS_DIR", str(_REPO_ROOT / "benchmarks")))
+
+
+def _default_reports_dir() -> Path:
+    return Path(os.environ.get("PARALLAX_REPORTS_DIR", str(_REPO_ROOT / "reports")))
+
+
+def _read_reports(directory: Path, predicate: Callable[[str], bool]) -> list[ReportOut]:
+    """Read every `*.md` file in `directory` matching `predicate`, sorted by name. Missing dir → []."""
+    if not directory.is_dir():
+        return []
+    reports = []
+    for path in sorted(directory.glob("*.md")):
+        if predicate(path.name):
+            reports.append(ReportOut(name=path.name, content=path.read_text()))
+    return reports
+
+
+def _is_backtest_report(name: str) -> bool:
+    return "backtest" in name or "logical-constraint" in name
 
 
 def get_conn(request: Request) -> Iterator[sqlite3.Connection]:
@@ -118,9 +156,27 @@ LEFT JOIN probability_snapshots ps ON ps.id = (
 """
 
 
-def create_app(db_path: str | Path | None = None) -> FastAPI:
-    """Build the FastAPI app reading from `db_path` (defaults to `PARALLAX_DB`/`DEFAULT_DB_PATH`)."""
+def create_app(
+    db_path: str | Path | None = None,
+    *,
+    benchmarks_dir: str | Path | None = None,
+    reports_dir: str | Path | None = None,
+    cache_ttl_secs: float = DEFAULT_CACHE_TTL_SECS,
+    rate_limit_max: int = DEFAULT_RATE_LIMIT_MAX,
+    rate_limit_window_secs: float = DEFAULT_RATE_LIMIT_WINDOW_SECS,
+    time_fn: Callable[[], float] = time.monotonic,
+) -> FastAPI:
+    """Build the FastAPI app.
+
+    `db_path` defaults to `PARALLAX_DB`/`DEFAULT_DB_PATH`; `benchmarks_dir`/`reports_dir` default to
+    the repo's committed dirs. Caching/rate-limiting are enabled by default; pass `cache_ttl_secs=0`
+    or `rate_limit_max=0` to disable either. `time_fn` is injectable for deterministic tests.
+    """
     resolved_db = str(db_path) if db_path is not None else _default_db_path()
+    resolved_benchmarks = (
+        Path(benchmarks_dir) if benchmarks_dir is not None else _default_benchmarks_dir()
+    )
+    resolved_reports = Path(reports_dir) if reports_dir is not None else _default_reports_dir()
 
     app = FastAPI(
         title="Parallax API",
@@ -128,6 +184,47 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         version="0.1.0",
     )
     app.state.db_path = resolved_db
+
+    # --- Task 13.5: rate limiting (outermost) + response caching (inner) middleware ---------------
+    # Added in this order so the rate limiter wraps the cache and is checked first (Starlette applies
+    # the last-added middleware outermost).
+    if cache_ttl_secs > 0:
+        cache = TTLResponseCache(cache_ttl_secs, time_fn=time_fn)
+
+        @app.middleware("http")
+        async def cache_middleware(request: Request, call_next):  # type: ignore[no-untyped-def]
+            if request.method != "GET":
+                return await call_next(request)
+            key = (request.url.path, request.url.query)
+            cached = cache.get(key)
+            if cached is not None:
+                status, body, content_type = cached
+                return Response(
+                    content=body, status_code=status, media_type=content_type,
+                    headers={"X-Cache": "HIT"},
+                )
+            response = await call_next(request)
+            body = b"".join([chunk async for chunk in response.body_iterator])
+            content_type = response.headers.get("content-type")
+            cache.set(key, (response.status_code, body, content_type))
+            return Response(
+                content=body, status_code=response.status_code, media_type=content_type,
+                headers={"X-Cache": "MISS"},
+            )
+
+    if rate_limit_max > 0:
+        limiter = FixedWindowRateLimiter(rate_limit_max, rate_limit_window_secs, time_fn=time_fn)
+
+        @app.middleware("http")
+        async def rate_limit_middleware(request: Request, call_next):  # type: ignore[no-untyped-def]
+            client_id = request.client.host if request.client else "unknown"
+            if not limiter.allow(client_id):
+                return JSONResponse(
+                    {"detail": "rate limit exceeded"},
+                    status_code=429,
+                    headers={"Retry-After": str(int(rate_limit_window_secs))},
+                )
+            return await call_next(request)
 
     @app.get("/health", response_model=HealthResponse)
     def health() -> HealthResponse:
@@ -177,6 +274,16 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             limit=limit,
             offset=offset,
         )
+
+    @app.get("/benchmarks", response_model=list[ReportOut])
+    def list_benchmarks() -> list[ReportOut]:
+        # All committed latency/perf reports (Phases 5/6): v1/v2/v3 + profile + latency-report.
+        return _read_reports(resolved_benchmarks, lambda _name: True)
+
+    @app.get("/backtests", response_model=list[ReportOut])
+    def list_backtests() -> list[ReportOut]:
+        # Backtest reports (Phases 11/12); calibration and other reports are excluded by the filter.
+        return _read_reports(resolved_reports, _is_backtest_report)
 
     return app
 

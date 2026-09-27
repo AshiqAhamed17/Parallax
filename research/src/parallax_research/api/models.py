@@ -68,3 +68,12 @@ class PaginatedSignals(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class ReportOut(BaseModel):
+    """One committed static report (Markdown), served for the dashboard to render."""
+
+    #: File name, e.g. `latency-report.md` or `backtest-validation.md`.
+    name: str
+    #: Full Markdown content of the report.
+    content: str
