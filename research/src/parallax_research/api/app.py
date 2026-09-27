@@ -39,6 +39,8 @@ from parallax_research.api.models import (
     MarketOut,
     ModelPredictionOut,
     PaginatedSignals,
+    ReplayOut,
+    ReplayPoint,
     ReportOut,
     SignalType,
 )
@@ -265,6 +267,26 @@ def create_app(
         if row is None:
             raise HTTPException(status_code=404, detail=f"market {market_id!r} not found")
         return _market_from_row(conn, row)
+
+    @app.get("/markets/{market_id}/replay", response_model=ReplayOut)
+    def get_market_replay(market_id: str, conn: ConnDep) -> ReplayOut:
+        exists = conn.execute(
+            "SELECT 1 FROM markets WHERE market_id = ?", (market_id,)
+        ).fetchone()
+        if exists is None:
+            raise HTTPException(status_code=404, detail=f"market {market_id!r} not found")
+        rows = conn.execute(
+            "SELECT ts_ns, probability FROM probability_snapshots "
+            "WHERE market_id = ? ORDER BY ts_ns ASC",
+            (market_id,),
+        ).fetchall()
+        return ReplayOut(
+            market_id=market_id,
+            points=[
+                ReplayPoint(ts_ns=int(r["ts_ns"]), probability=float(r["probability"]))
+                for r in rows
+            ],
+        )
 
     @app.get("/arbitrage", response_model=PaginatedSignals)
     def list_arbitrage_signals(

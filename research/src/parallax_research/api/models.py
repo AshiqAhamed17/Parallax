@@ -77,3 +77,17 @@ class ReportOut(BaseModel):
     name: str
     #: Full Markdown content of the report.
     content: str
+
+
+class ReplayPoint(BaseModel):
+    """One point in a market's probability history (for the replay scrubber)."""
+
+    ts_ns: int
+    probability: float
+
+
+class ReplayOut(BaseModel):
+    """A market's full probability history, oldest-first, for time-scrubbed replay."""
+
+    market_id: str
+    points: list[ReplayPoint]

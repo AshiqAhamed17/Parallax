@@ -7,6 +7,8 @@ from parallax_research.api.models import (
     MarketOut,
     ModelPredictionOut,
     PaginatedSignals,
+    ReplayOut,
+    ReplayPoint,
     ReportOut,
     SignalType,
 )
@@ -18,6 +20,8 @@ __all__ = [
     "MarketOut",
     "ModelPredictionOut",
     "PaginatedSignals",
+    "ReplayOut",
+    "ReplayPoint",
     "ReportOut",
     "SignalType",
     "app",
