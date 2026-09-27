@@ -1,26 +1,162 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
+/* ------------------------------------------------------------------ *
+ * Parallax design tokens — cyan on cool near-black. Dark-only.
+ * shadcn primitives read the --background/--card/--primary/... names;
+ * we point those at our palette and add the semantic status set.
+ * ------------------------------------------------------------------ */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Parallax accents + semantic status (usable as text-cyan, bg-ok, border-crit, ...) */
+  --color-cyan: var(--accent-cyan);
+  --color-sky: var(--accent-sky);
+  --color-crit: var(--status-crit);
+  --color-high: var(--status-high);
+  --color-med: var(--status-med);
+  --color-low: var(--status-low);
+  --color-ok: var(--status-ok);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+
+  /* chart palette (Recharts + sparklines) */
+  --color-chart-1: var(--accent-cyan);
+  --color-chart-2: var(--accent-sky);
+  --color-chart-3: var(--status-ok);
+  --color-chart-4: var(--status-high);
+  --color-chart-5: #a78bfa;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --background: #0a0b0d;
+  --surface: #101216;
+  --surface-2: #15181d;
+  --foreground: #e6e9ee;
+
+  --card: #101216;
+  --card-foreground: #e6e9ee;
+  --popover: #15181d;
+  --popover-foreground: #e6e9ee;
+
+  --primary: #22d3ee;
+  --primary-foreground: #04121a;
+  --secondary: #15181d;
+  --secondary-foreground: #e6e9ee;
+  --muted: #15181d;
+  --muted-foreground: #8a93a3;
+  --accent: #15181d;
+  --accent-foreground: #e6e9ee;
+
+  --destructive: #f43f5e;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #22d3ee;
+  --radius: 0.875rem;
+
+  --accent-cyan: #22d3ee;
+  --accent-sky: #38bdf8;
+  --status-crit: #f43f5e;
+  --status-high: #fb923c;
+  --status-med: #facc15;
+  --status-low: #38bdf8;
+  --status-ok: #34d399;
+}
+
+/* Dark-only: mirror the palette under .dark so shadcn `dark:` variants resolve too. */
+.dark {
+  --background: #0a0b0d;
+  --surface: #101216;
+  --surface-2: #15181d;
+  --foreground: #e6e9ee;
+  --card: #101216;
+  --card-foreground: #e6e9ee;
+  --popover: #15181d;
+  --popover-foreground: #e6e9ee;
+  --primary: #22d3ee;
+  --primary-foreground: #04121a;
+  --secondary: #15181d;
+  --secondary-foreground: #e6e9ee;
+  --muted: #15181d;
+  --muted-foreground: #8a93a3;
+  --accent: #15181d;
+  --accent-foreground: #e6e9ee;
+  --destructive: #f43f5e;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #22d3ee;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+  }
+  html {
+    @apply font-sans;
+  }
+  /* All numeric/monospace data lines up column-to-column and never jitters on update. */
+  .tabnum,
+  .font-mono {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Faint chart/oscilloscope grid for hero + feature surfaces (functional texture, low opacity). */
+.grid-texture {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* Cyan radial glow used sparingly behind hero focal elements. */
+.glow-cyan {
+  background: radial-gradient(
+    60% 60% at 50% 40%,
+    rgba(34, 211, 238, 0.14) 0%,
+    rgba(34, 211, 238, 0) 70%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
