@@ -1,8 +1,9 @@
+// Persistent, honest disclaimer shown on every route (constraint 2.1: Parallax never trades).
 export function DisclaimerBanner() {
   return (
-    <div className="w-full bg-amber-100 px-4 py-2 text-center text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-      Informational only, not investment advice. Not affiliated with Kalshi, Polymarket,
-      Manifold, or PredictIt. Parallax never places real orders.
+    <div className="w-full border-b border-border bg-surface-2/60 px-4 py-1.5 text-center text-xs text-muted-foreground">
+      <span className="mr-1.5 inline-block size-1.5 translate-y-[-1px] rounded-full bg-med align-middle" aria-hidden />
+      Informational only. Parallax observes prediction markets and never places orders. Figures shown are demo data until the live collector is deployed.
     </div>
   );
 }
