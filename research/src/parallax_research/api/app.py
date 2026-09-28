@@ -54,7 +54,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 
 #: Default response-cache TTL and rate-limit settings (all overridable via `create_app`).
 DEFAULT_CACHE_TTL_SECS = 5.0
-DEFAULT_RATE_LIMIT_MAX = 120
+DEFAULT_RATE_LIMIT_MAX = 600
 DEFAULT_RATE_LIMIT_WINDOW_SECS = 60.0
 
 #: Default browser origins allowed to call the API (overridable via `PARALLAX_CORS_ORIGINS`).
@@ -68,6 +68,13 @@ def _default_db_path() -> str:
 def _default_cors_origins() -> list[str]:
     raw = os.environ.get("PARALLAX_CORS_ORIGINS")
     return [o.strip() for o in raw.split(",") if o.strip()] if raw else DEFAULT_CORS_ORIGINS
+
+
+def _default_rate_limit_max() -> int:
+    # Server-side rendering fans out several requests per page from one IP, so the limit is
+    # generous by default and can be raised or disabled (0) via env for trusted-SSR deployments.
+    raw = os.environ.get("PARALLAX_RATE_LIMIT_MAX")
+    return int(raw) if raw is not None else DEFAULT_RATE_LIMIT_MAX
 
 
 def _default_benchmarks_dir() -> Path:
@@ -98,7 +105,10 @@ def get_conn(request: Request) -> Iterator[sqlite3.Connection]:
 
     Self-ensures the schema so queries don't error before the collector has created any tables.
     """
-    conn = sqlite3.connect(request.app.state.db_path)
+    # check_same_thread=False: FastAPI runs sync endpoints in a threadpool, so the connection
+    # created here may be used on a different worker thread. Safe: each request gets its own
+    # connection, created and closed within the request, never shared concurrently.
+    conn = sqlite3.connect(request.app.state.db_path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     ensure_schema(conn)
     try:
@@ -129,6 +139,16 @@ def _latest_prediction(conn: sqlite3.Connection, market_id: str) -> ModelPredict
     )
 
 
+def _recent_probs(conn: sqlite3.Connection, market_id: str, n: int = 24) -> list[float]:
+    """Last `n` probabilities for a market, returned oldest→newest (for inline sparklines)."""
+    rows = conn.execute(
+        "SELECT probability FROM probability_snapshots WHERE market_id = ? "
+        "ORDER BY ts_ns DESC LIMIT ?",
+        (market_id, n),
+    ).fetchall()
+    return [float(r[0]) for r in reversed(rows)]
+
+
 def _market_from_row(conn: sqlite3.Connection, row: sqlite3.Row) -> MarketOut:
     return MarketOut(
         market_id=row["market_id"],
@@ -140,6 +160,7 @@ def _market_from_row(conn: sqlite3.Connection, row: sqlite3.Row) -> MarketOut:
         volume_24h=None if row["volume_24h"] is None else float(row["volume_24h"]),
         last_updated_ns=None if row["last_updated_ns"] is None else int(row["last_updated_ns"]),
         prediction=_latest_prediction(conn, row["market_id"]),
+        recent=_recent_probs(conn, row["market_id"]),
     )
 
 
@@ -173,7 +194,7 @@ def create_app(
     benchmarks_dir: str | Path | None = None,
     reports_dir: str | Path | None = None,
     cache_ttl_secs: float = DEFAULT_CACHE_TTL_SECS,
-    rate_limit_max: int = DEFAULT_RATE_LIMIT_MAX,
+    rate_limit_max: int | None = None,
     rate_limit_window_secs: float = DEFAULT_RATE_LIMIT_WINDOW_SECS,
     cors_origins: list[str] | None = None,
     time_fn: Callable[[], float] = time.monotonic,
@@ -189,6 +210,7 @@ def create_app(
         Path(benchmarks_dir) if benchmarks_dir is not None else _default_benchmarks_dir()
     )
     resolved_reports = Path(reports_dir) if reports_dir is not None else _default_reports_dir()
+    resolved_rate_limit = rate_limit_max if rate_limit_max is not None else _default_rate_limit_max()
 
     app = FastAPI(
         title="Parallax API",
@@ -224,8 +246,8 @@ def create_app(
                 headers={"X-Cache": "MISS"},
             )
 
-    if rate_limit_max > 0:
-        limiter = FixedWindowRateLimiter(rate_limit_max, rate_limit_window_secs, time_fn=time_fn)
+    if resolved_rate_limit > 0:
+        limiter = FixedWindowRateLimiter(resolved_rate_limit, rate_limit_window_secs, time_fn=time_fn)
 
         @app.middleware("http")
         async def rate_limit_middleware(request: Request, call_next):  # type: ignore[no-untyped-def]

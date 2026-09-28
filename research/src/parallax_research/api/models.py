@@ -45,6 +45,8 @@ class MarketOut(BaseModel):
     #: `ts_ns` of the latest probability snapshot (None if none collected yet).
     last_updated_ns: int | None = None
     prediction: ModelPredictionOut | None = None
+    #: Recent probability series (oldest→newest, up to 24 points) for inline sparklines.
+    recent: list[float] = []
 
 
 class ArbitrageSignalOut(BaseModel):

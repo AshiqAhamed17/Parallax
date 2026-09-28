@@ -60,6 +60,14 @@ def test_list_markets_returns_both_with_latest_state(client):
     assert m2["resolved_outcome"] == 1
 
 
+def test_market_includes_recent_series_oldest_first(client):
+    m1 = next(m for m in client.get("/markets").json() if m["market_id"] == "m1")
+    # Seeded snapshots were 0.30@1000 then 0.42@2000 → recent is oldest→newest.
+    assert m1["recent"] == [0.30, 0.42]
+    m2 = next(m for m in client.get("/markets").json() if m["market_id"] == "m2")
+    assert m2["recent"] == []  # no snapshots
+
+
 def test_get_market_detail(client):
     resp = client.get("/markets/m1")
     assert resp.status_code == 200
