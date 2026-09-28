@@ -3,7 +3,6 @@
 // dashboard reflects the latest collector/demo data.
 
 import type {
-  ArbitrageSignal,
   Market,
   PaginatedSignals,
   Replay,
@@ -11,7 +10,9 @@ import type {
   SignalType,
 } from "@/lib/types";
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// 127.0.0.1 (not "localhost") so Node's server-side fetch doesn't resolve to IPv6 ::1 while the
+// API listens on IPv4. In production NEXT_PUBLIC_API_URL points at the deployed API.
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
 export class ApiError extends Error {
   constructor(

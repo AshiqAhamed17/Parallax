@@ -19,6 +19,7 @@ export interface Market {
   volume_24h: number | null;
   last_updated_ns: number | null;
   prediction: ModelPrediction | null;
+  recent: number[];
 }
 
 export type SignalType = "logical_constraint" | "cross_source_divergence";
