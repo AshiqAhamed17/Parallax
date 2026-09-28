@@ -5,9 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ------------------------------------------------------------------ *
- * Parallax design tokens — cyan on cool near-black. Dark-only.
- * shadcn primitives read the --background/--card/--primary/... names;
- * we point those at our palette and add the semantic status set.
+ * Parallax — premium dark. Warm violet-tinted near-black, iris/violet
+ * accent, a single warm-gold highlight. Big, confident, glossy.
  * ------------------------------------------------------------------ */
 @theme inline {
   --color-background: var(--background);
@@ -29,9 +28,9 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Parallax accents + semantic status (usable as text-cyan, bg-ok, border-crit, ...) */
-  --color-cyan: var(--accent-cyan);
-  --color-sky: var(--accent-sky);
+  --color-iris: var(--iris);
+  --color-violet: var(--violet);
+  --color-gold: var(--gold);
   --color-crit: var(--status-crit);
   --color-high: var(--status-high);
   --color-med: var(--status-med);
@@ -40,79 +39,58 @@
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
 
-  /* chart palette (Recharts + sparklines) */
-  --color-chart-1: var(--accent-cyan);
-  --color-chart-2: var(--accent-sky);
+  --color-chart-1: var(--iris);
+  --color-chart-2: var(--violet);
   --color-chart-3: var(--status-ok);
-  --color-chart-4: var(--status-high);
-  --color-chart-5: #a78bfa;
+  --color-chart-4: var(--gold);
+  --color-chart-5: #f472b6;
 
-  --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans-ui);
   --font-mono: var(--font-geist-mono);
 
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
-  --radius-lg: 0.875rem;
-  --radius-xl: 1rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
 }
 
-:root {
-  --background: #0a0b0d;
-  --surface: #101216;
-  --surface-2: #15181d;
-  --foreground: #e6e9ee;
-
-  --card: #101216;
-  --card-foreground: #e6e9ee;
-  --popover: #15181d;
-  --popover-foreground: #e6e9ee;
-
-  --primary: #22d3ee;
-  --primary-foreground: #04121a;
-  --secondary: #15181d;
-  --secondary-foreground: #e6e9ee;
-  --muted: #15181d;
-  --muted-foreground: #8a93a3;
-  --accent: #15181d;
-  --accent-foreground: #e6e9ee;
-
-  --destructive: #f43f5e;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.12);
-  --ring: #22d3ee;
-  --radius: 0.875rem;
-
-  --accent-cyan: #22d3ee;
-  --accent-sky: #38bdf8;
-  --status-crit: #f43f5e;
-  --status-high: #fb923c;
-  --status-med: #facc15;
-  --status-low: #38bdf8;
-  --status-ok: #34d399;
-}
-
-/* Dark-only: mirror the palette under .dark so shadcn `dark:` variants resolve too. */
+:root,
 .dark {
-  --background: #0a0b0d;
-  --surface: #101216;
-  --surface-2: #15181d;
-  --foreground: #e6e9ee;
-  --card: #101216;
-  --card-foreground: #e6e9ee;
-  --popover: #15181d;
-  --popover-foreground: #e6e9ee;
-  --primary: #22d3ee;
-  --primary-foreground: #04121a;
-  --secondary: #15181d;
-  --secondary-foreground: #e6e9ee;
-  --muted: #15181d;
-  --muted-foreground: #8a93a3;
-  --accent: #15181d;
-  --accent-foreground: #e6e9ee;
-  --destructive: #f43f5e;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.12);
-  --ring: #22d3ee;
+  --background: #0b0910;
+  --surface: #17131f;
+  --surface-2: #201a2c;
+  --foreground: #f1eef8;
+
+  --card: #16121e;
+  --card-foreground: #f1eef8;
+  --popover: #201a2c;
+  --popover-foreground: #f1eef8;
+
+  --primary: #8b7cf6;
+  --primary-foreground: #0b0910;
+  --secondary: #201a2c;
+  --secondary-foreground: #f1eef8;
+  --muted: #201a2c;
+  --muted-foreground: #9d94b3;
+  --accent: #201a2c;
+  --accent-foreground: #f1eef8;
+
+  --destructive: #fb7185;
+  --border: rgba(180, 168, 214, 0.1);
+  --input: rgba(180, 168, 214, 0.16);
+  --ring: #8b7cf6;
+  --radius: 1rem;
+
+  --iris: #a78bfa;
+  --violet: #8b7cf6;
+  --gold: #e7b45a;
+  --status-crit: #fb7185;
+  --status-high: #fb9a4b;
+  --status-med: #facc15;
+  --status-low: #a78bfa;
+  --status-ok: #4ade80;
 }
 
 @layer base {
@@ -120,34 +98,100 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "cv11", "ss01";
+    @apply text-foreground;
+    background:
+      radial-gradient(80% 50% at 78% -5%, rgba(139, 124, 246, 0.16), transparent 60%),
+      radial-gradient(60% 40% at 8% 8%, rgba(231, 180, 90, 0.05), transparent 55%),
+      #0a0810;
+    font-size: 17px;
   }
   html {
     @apply font-sans;
   }
-  /* All numeric/monospace data lines up column-to-column and never jitters on update. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
   .tabnum,
   .font-mono {
     font-variant-numeric: tabular-nums;
   }
 }
 
-/* Faint chart/oscilloscope grid for hero + feature surfaces (functional texture, low opacity). */
-.grid-texture {
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 44px 44px;
+/* Entrance (pure CSS: always visible at rest via `both`). */
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.reveal {
+  animation: reveal-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Cyan radial glow used sparingly behind hero focal elements. */
-.glow-cyan {
+@keyframes spark-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.spark-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: spark-draw 1s ease-out forwards;
+}
+
+/* Chart/oscilloscope grid, masked to fade out. */
+.grid-texture {
+  background-image:
+    linear-gradient(to right, rgba(180, 168, 214, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(180, 168, 214, 0.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(120% 90% at 70% 0%, #000 25%, transparent 72%);
+}
+
+.glow-violet {
   background: radial-gradient(
-    60% 60% at 50% 40%,
-    rgba(34, 211, 238, 0.14) 0%,
-    rgba(34, 211, 238, 0) 70%
+    50% 50% at 50% 45%,
+    rgba(139, 124, 246, 0.32) 0%,
+    rgba(167, 139, 250, 0.1) 45%,
+    transparent 72%
   );
+}
+
+/* Film grain over the whole page — kills the flat look. */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Glossy premium panel: warm gradient surface, violet-tinted hairline, top highlight, deep drop. */
+.panel {
+  background:
+    linear-gradient(180deg, rgba(167, 139, 250, 0.04), transparent 30%),
+    linear-gradient(180deg, #1a1624 0%, #120f19 100%);
+  border: 1px solid rgba(180, 168, 214, 0.12);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+    0 30px 80px -28px rgba(0, 0, 0, 0.8);
+}
+
+.frame-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  color: var(--muted-foreground);
 }
 
 @media (prefers-reduced-motion: reduce) {
