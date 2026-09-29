@@ -185,27 +185,33 @@ def get_bets(
 
 
 def search_markets(
-    term: str,
+    term: str = "",
     *,
+    topic_slug: str | None = None,
     limit: int = 20,
     filter: str = "open",
     sort: str = "liquidity",
     client: httpx.Client | None = None,
 ) -> list[ManifoldMarket]:
-    """Search live binary markets (default: open, ranked by liquidity)."""
+    """Search live binary markets (default: open, ranked by liquidity).
+
+    Pass `topic_slug` to filter by a Manifold topic (clean, on-topic results — preferred for
+    curation); pass `term` for a free-text search. `term` defaults to empty, which the API accepts
+    when `topicSlug` is set.
+    """
     owned = client is None
     client = client or httpx.Client(timeout=_TIMEOUT)
+    params: dict[str, Any] = {
+        "term": term,
+        "limit": limit,
+        "filter": filter,
+        "sort": sort,
+        "contractType": "BINARY",
+    }
+    if topic_slug is not None:
+        params["topicSlug"] = topic_slug
     try:
-        resp = client.get(
-            f"{API_BASE}/search-markets",
-            params={
-                "term": term,
-                "limit": limit,
-                "filter": filter,
-                "sort": sort,
-                "contractType": "BINARY",
-            },
-        )
+        resp = client.get(f"{API_BASE}/search-markets", params=params)
         resp.raise_for_status()
         rows = resp.json()
     finally:
