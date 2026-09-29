@@ -26,7 +26,8 @@ pub fn apply_migrations(conn: &Connection) -> Result<()> {
             platform TEXT NOT NULL,
             question_text TEXT NOT NULL,
             close_time TEXT NOT NULL,
-            resolved_outcome INTEGER
+            resolved_outcome INTEGER,
+            category TEXT
         );
 
         CREATE TABLE IF NOT EXISTS probability_snapshots (
@@ -92,7 +93,14 @@ pub fn apply_migrations(conn: &Connection) -> Result<()> {
             details_json TEXT NOT NULL
         );
         ",
-    )
+    )?;
+
+    // Databases created before `category` was added to the `markets` schema above won't get the
+    // column from CREATE TABLE IF NOT EXISTS (the table already exists), so add it defensively.
+    // On a fresh DB the column already exists and ALTER fails with "duplicate column name" —
+    // that's the only expected error, so it's ignored.
+    let _ = conn.execute("ALTER TABLE markets ADD COLUMN category TEXT", []);
+    Ok(())
 }
 
 #[cfg(test)]
