@@ -5,6 +5,7 @@ import { HowItWorks } from "@/components/how-it-works";
 import { LiveDot } from "@/components/live-dot";
 import { MagneticButton } from "@/components/magnetic-button";
 import { MarketTerminal, type TerminalRow } from "@/components/market-terminal";
+import { MarketUniverse, type UniverseSlice } from "@/components/market-universe";
 import { ProbTape } from "@/components/prob-tape";
 import { Reveal } from "@/components/reveal";
 import { SignalStrip } from "@/components/signal-strip";
@@ -35,6 +36,15 @@ export default async function Home() {
   const nLogical = signals.items.filter(
     (s: ArbitrageSignal) => s.type === "logical_constraint",
   ).length;
+
+  const byCategory = new Map<string, number>();
+  for (const m of markets) {
+    const key = m.category ?? "Other";
+    byCategory.set(key, (byCategory.get(key) ?? 0) + 1);
+  }
+  const universe: UniverseSlice[] = [...byCategory.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count);
 
   return (
     <div className="flex flex-col gap-28 pb-16 sm:gap-36">
@@ -99,6 +109,13 @@ export default async function Home() {
       <Reveal>
         <ProbTape items={open.map((m) => ({ question: m.question_text, probability: m.probability }))} />
       </Reveal>
+
+      {/* Coverage breadth — crypto, sports, macro, politics, culture */}
+      {universe.length > 0 ? (
+        <Reveal>
+          <MarketUniverse slices={universe} total={markets.length} />
+        </Reveal>
+      ) : null}
 
       {/* Full live terminal */}
       <section className="flex flex-col gap-7">
