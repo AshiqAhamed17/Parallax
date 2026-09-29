@@ -3,6 +3,7 @@
 // dashboard reflects the latest collector/demo data.
 
 import type {
+  Group,
   Market,
   PaginatedSignals,
   Replay,
@@ -64,6 +65,10 @@ export function getSignals(
   if (opts.offset != null) params.set("offset", String(opts.offset));
   const qs = params.toString();
   return request<PaginatedSignals>(`/arbitrage${qs ? `?${qs}` : ""}`);
+}
+
+export function getGroups(): Promise<Group[]> {
+  return request<Group[]>("/groups");
 }
 
 export function getBenchmarks(): Promise<Report[]> {

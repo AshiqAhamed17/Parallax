@@ -64,7 +64,7 @@ jobs:
       - name: Start API
         working-directory: research
         run: |
-          PARALLAX_DB=../data/parallax-demo.db PARALLAX_RATE_LIMIT_MAX=0 \
+          PARALLAX_DB=../data/parallax-demo.db PARALLAX_RATE_LIMIT_MAX=0 PARALLAX_GROUPS_CONFIG=config/demo_correlated_groups.yaml \
             uv run uvicorn parallax_research.api.app:app --host 127.0.0.1 --port 8000 --log-level warning &
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/health && break || sleep 1; done
 

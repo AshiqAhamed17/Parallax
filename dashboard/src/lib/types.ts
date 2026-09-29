@@ -55,3 +55,30 @@ export interface Replay {
   market_id: string;
   points: ReplayPoint[];
 }
+
+export interface GroupMarket {
+  key: string;
+  market_id: string;
+  label: string | null;
+  question_text: string | null;
+  probability: number | null;
+}
+
+export interface GroupConstraint {
+  lhs: string;
+  op: string;
+  rhs: string;
+  note: string | null;
+  holds: boolean;
+  gross_violation: number;
+  net_violation: number;
+}
+
+export interface Group {
+  id: string;
+  description: string;
+  category: string | null;
+  consistent: boolean;
+  markets: GroupMarket[];
+  constraints: GroupConstraint[];
+}

@@ -94,3 +94,36 @@ class ReplayOut(BaseModel):
 
     market_id: str
     points: list[ReplayPoint]
+
+
+class GroupMarketOut(BaseModel):
+    """One market within a correlated group, with its live probability."""
+
+    key: str
+    market_id: str
+    label: str | None = None
+    question_text: str | None = None
+    probability: float | None = None
+
+
+class GroupConstraintOut(BaseModel):
+    """An ordering constraint `P(lhs) op P(rhs)` and whether it currently holds."""
+
+    lhs: str
+    op: str
+    rhs: str
+    note: str | None = None
+    holds: bool
+    gross_violation: float
+    net_violation: float
+
+
+class GroupOut(BaseModel):
+    """A correlated-market group with live probabilities and constraint-consistency status."""
+
+    id: str
+    description: str
+    category: str | None = None
+    consistent: bool
+    markets: list[GroupMarketOut]
+    constraints: list[GroupConstraintOut]

@@ -1,0 +1,32 @@
+# Demo correlated-market groups referencing the seeded demo market ids (for the dashboard showcase).
+# Real curated groups live in correlated_market_groups.yaml; this one lines up with seed_demo_db.py.
+groups:
+  - id: btc-eoy-2026-thresholds
+    description: "Bitcoin's end-of-2026 close, sliced at rising thresholds. A higher threshold implies every lower one, so probability must fall as the threshold rises."
+    markets:
+      - {key: gt_100k, manifold_market_id: "btc-100k", label: "BTC > $100k EOY 2026"}
+      - {key: gt_120k, manifold_market_id: "btc-120k", label: "BTC > $120k EOY 2026"}
+      - {key: gt_150k, manifold_market_id: "btc-150k", label: "BTC > $150k EOY 2026"}
+    constraints:
+      - {lhs: gt_120k, op: "<=", rhs: gt_100k, note: "above $120k implies above $100k"}
+      - {lhs: gt_150k, op: "<=", rhs: gt_120k, note: "above $150k implies above $120k"}
+
+  - id: verstappen-2026
+    description: "Winning the title implies winning a race implies scoring points. A live inconsistency here is a provable mispricing."
+    markets:
+      - {key: title, manifold_market_id: "f1-max-title", label: "Verstappen wins the 2026 title"}
+      - {key: race, manifold_market_id: "f1-max-race", label: "Verstappen wins a 2026 race"}
+      - {key: points, manifold_market_id: "f1-max-points", label: "Verstappen scores 2026 points"}
+    constraints:
+      - {lhs: title, op: "<=", rhs: race, note: "winning the title implies winning a race"}
+      - {lhs: race, op: "<=", rhs: points, note: "winning a race implies scoring points"}
+
+  - id: man-city-2026-27
+    description: "Winning the league implies a top-four finish implies a top-ten finish."
+    markets:
+      - {key: win, manifold_market_id: "pl-city-win", label: "Man City win the 2026-27 PL"}
+      - {key: top4, manifold_market_id: "pl-city-top4", label: "Man City finish top four"}
+      - {key: top10, manifold_market_id: "pl-city-top10", label: "Man City finish top ten"}
+    constraints:
+      - {lhs: win, op: "<=", rhs: top4, note: "winning the league implies a top-four finish"}
+      - {lhs: top4, op: "<=", rhs: top10, note: "top four implies top ten"}

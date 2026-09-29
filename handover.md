@@ -51,7 +51,7 @@ Taste guided by `.agents/skills/high-end-visual-design` (installed via `npx skil
 **IMPORTANT: view/run with `npm run build && npm start` (or `npm run preview`), NOT `npm run dev`** —
 `next dev`'s HMR WebSocket is broken in this Next 16 setup and blocks hydration, so dev serves a dead
 static (non-animated) page. Production hydrates fine. Run the API first:
-`cd research && PARALLAX_DB=../data/parallax-demo.db PARALLAX_RATE_LIMIT_MAX=0 uv run uvicorn
+`cd research && PARALLAX_DB=../data/parallax-demo.db PARALLAX_RATE_LIMIT_MAX=0 PARALLAX_GROUPS_CONFIG=config/demo_correlated_groups.yaml uv run uvicorn
 parallax_research.api.app:app --host 127.0.0.1 --port 8000`, then the dashboard with
 `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`. Demo data via `research/scripts/seed_demo_db.py`.
 

@@ -35,6 +35,9 @@ from fastapi.responses import JSONResponse, Response
 from parallax_research.api.middleware import FixedWindowRateLimiter, TTLResponseCache
 from parallax_research.api.models import (
     ArbitrageSignalOut,
+    GroupConstraintOut,
+    GroupMarketOut,
+    GroupOut,
     HealthResponse,
     MarketOut,
     ModelPredictionOut,
@@ -44,6 +47,8 @@ from parallax_research.api.models import (
     ReportOut,
     SignalType,
 )
+from parallax_research.arbitrage.constraints import load_constraint_groups
+from parallax_research.arbitrage.logical_constraint import DEFAULT_COST_PER_LEG
 from parallax_research.storage import ensure_schema
 
 #: Default database path when none is supplied (overridable via the `PARALLAX_DB` env var).
@@ -83,6 +88,12 @@ def _default_benchmarks_dir() -> Path:
 
 def _default_reports_dir() -> Path:
     return Path(os.environ.get("PARALLAX_REPORTS_DIR", str(_REPO_ROOT / "reports")))
+
+
+def _default_groups_config() -> Path:
+    return Path(
+        os.environ.get("PARALLAX_GROUPS_CONFIG", str(_REPO_ROOT / "config" / "correlated_market_groups.yaml"))
+    )
 
 
 def _read_reports(directory: Path, predicate: Callable[[str], bool]) -> list[ReportOut]:
@@ -310,6 +321,78 @@ def create_app(
                 for r in rows
             ],
         )
+
+    @app.get("/groups", response_model=list[GroupOut])
+    def list_groups(conn: ConnDep) -> list[GroupOut]:
+        path = _default_groups_config()
+        if not path.is_file():
+            return []
+        try:
+            config = load_constraint_groups(path)
+        except Exception:  # noqa: BLE001 — a malformed config should not 500 the endpoint
+            return []
+        cost = 2.0 * DEFAULT_COST_PER_LEG
+        out: list[GroupOut] = []
+        for g in config.groups:
+            probs: dict[str, float | None] = {}
+            markets_out: list[GroupMarketOut] = []
+            category: str | None = None
+            for m in g.markets:
+                meta = conn.execute(
+                    "SELECT question_text, category FROM markets WHERE market_id = ?",
+                    (m.manifold_market_id,),
+                ).fetchone()
+                prow = conn.execute(
+                    "SELECT probability FROM probability_snapshots WHERE market_id = ? "
+                    "ORDER BY ts_ns DESC LIMIT 1",
+                    (m.manifold_market_id,),
+                ).fetchone()
+                prob = None if prow is None else float(prow[0])
+                probs[m.key] = prob
+                if category is None and meta is not None and meta["category"]:
+                    category = meta["category"]
+                markets_out.append(
+                    GroupMarketOut(
+                        key=m.key,
+                        market_id=m.manifold_market_id,
+                        label=m.label,
+                        question_text=meta["question_text"] if meta else None,
+                        probability=prob,
+                    )
+                )
+            constraints_out: list[GroupConstraintOut] = []
+            consistent = True
+            for c in g.constraints:
+                pl, pr = probs.get(c.lhs), probs.get(c.rhs)
+                gross = (
+                    0.0
+                    if pl is None or pr is None
+                    else max(0.0, pl - pr) if c.op == "<=" else max(0.0, pr - pl)
+                )
+                holds = gross <= 0.0
+                consistent = consistent and holds
+                constraints_out.append(
+                    GroupConstraintOut(
+                        lhs=c.lhs,
+                        op=c.op,
+                        rhs=c.rhs,
+                        note=c.note,
+                        holds=holds,
+                        gross_violation=round(gross, 4),
+                        net_violation=round(gross - cost, 4),
+                    )
+                )
+            out.append(
+                GroupOut(
+                    id=g.id,
+                    description=g.description,
+                    category=category,
+                    consistent=consistent,
+                    markets=markets_out,
+                    constraints=constraints_out,
+                )
+            )
+        return out
 
     @app.get("/arbitrage", response_model=PaginatedSignals)
     def list_arbitrage_signals(
