@@ -1,11 +1,15 @@
 import Link from "next/link";
+import { CountUp } from "@/components/count-up";
 import { EdgeBar } from "@/components/edge-bar";
 import { LiveDot } from "@/components/live-dot";
+import { MagneticButton } from "@/components/magnetic-button";
 import { MarketTerminal, type TerminalRow } from "@/components/market-terminal";
 import { ProbTape } from "@/components/prob-tape";
 import { Reveal } from "@/components/reveal";
 import { SignalStrip } from "@/components/signal-strip";
 import { Sparkline } from "@/components/sparkline";
+import { SpotlightCard } from "@/components/spotlight-card";
+import { TiltCard } from "@/components/tilt-card";
 import { getMarkets, getSignals } from "@/lib/api";
 import { fmtEdge, fmtEv, fmtProb } from "@/lib/format";
 import type { ArbitrageSignal, Market, PaginatedSignals } from "@/lib/types";
@@ -61,33 +65,33 @@ export default async function Home() {
           </Reveal>
           <Reveal delay={0.24}>
             <div className="mt-10 flex flex-wrap items-center gap-3">
-              <Link
+              <MagneticButton
                 href="/markets"
-                className="group flex items-center gap-3 rounded-full bg-primary py-2 pl-6 pr-2 text-base font-semibold text-primary-foreground shadow-[0_16px_50px_-12px_rgba(16,185,129,0.55)] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]"
+                className="group items-center gap-3 rounded-full bg-primary py-2 pl-6 pr-2 text-base font-semibold text-primary-foreground shadow-[0_16px_50px_-12px_rgba(234,179,8,0.55)]"
               >
                 Explore markets
-                <span className="flex size-8 items-center justify-center rounded-full bg-black/15 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
+                <span className="ml-3 flex size-8 items-center justify-center rounded-full bg-black/20 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
                   <Arrow />
                 </span>
-              </Link>
-              <Link
+              </MagneticButton>
+              <MagneticButton
                 href="/performance"
                 className="rounded-full border border-white/12 px-6 py-3 text-base font-medium text-foreground transition-colors duration-500 hover:border-white/25 hover:bg-white/[0.03]"
               >
                 See measured latency
-              </Link>
+              </MagneticButton>
             </div>
           </Reveal>
           <Reveal delay={0.32}>
             <dl className="mt-14 flex gap-12">
-              <HeroStat value={String(markets.length)} label="markets tracked" />
+              <HeroStat value={markets.length} label="markets tracked" />
               <HeroStat value={fmtEdge(featured?.prediction?.edge ?? null)} label="top model edge" />
-              <HeroStat value={String(signals.total)} label="live signals" />
+              <HeroStat value={signals.total} label="live signals" />
             </dl>
           </Reveal>
         </div>
 
-        {/* Featured-market spotlight — the product-as-art moment (double-bezel) */}
+        {/* Featured-market spotlight — the product-as-art moment (tilt + spotlight) */}
         <Reveal delay={0.28}>{featured ? <FeaturedCard market={featured} /> : null}</Reveal>
       </section>
 
@@ -99,9 +103,9 @@ export default async function Home() {
       <section className="flex flex-col gap-7">
         <SectionHead eyebrow="live markets" title="Market vs. calibrated model" note="Every tracked market, updated as bets land." />
         <Reveal>
-          <div className="bezel">
+          <SpotlightCard className="bezel" lift={false}>
             <MarketTerminal rows={rows} />
-          </div>
+          </SpotlightCard>
         </Reveal>
       </section>
 
@@ -109,14 +113,16 @@ export default async function Home() {
       <section className="flex flex-col gap-7">
         <SectionHead eyebrow="signals" title="Where the market is wrong" note="Mispricings from both detectors, and the system at a glance." />
         <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <SignalStrip signals={signals.items.slice(0, 6)} />
-          <div className="panel flex flex-col gap-7 p-7">
+          <SpotlightCard className="panel" lift={false}>
+            <SignalStrip signals={signals.items.slice(0, 6)} />
+          </SpotlightCard>
+          <SpotlightCard className="panel flex flex-col gap-7 p-7">
             <span className="frame-label">snapshot</span>
             <div className="grid grid-cols-2 gap-7">
-              <Stat label="Markets" value={String(markets.length)} sub={`${open.length} open`} />
+              <Stat label="Markets" value={markets.length} sub={`${open.length} open`} />
               <Stat label="Top edge" value={fmtEdge(featured?.prediction?.edge ?? null)} sub="vs market" />
-              <Stat label="Logical" value={String(nLogical)} sub="constraint breaks" />
-              <Stat label="Divergence" value={String(signals.total - nLogical)} sub="cross-source" />
+              <Stat label="Logical" value={nLogical} sub="constraint breaks" />
+              <Stat label="Divergence" value={signals.total - nLogical} sub="cross-source" />
             </div>
             <Link
               href="/performance"
@@ -124,11 +130,18 @@ export default async function Home() {
             >
               Measured latency and backtest P&amp;L, from real runs
             </Link>
-          </div>
+          </SpotlightCard>
         </div>
       </section>
     </div>
   );
+}
+
+function StatValue({ value }: { value: number | string }) {
+  if (typeof value === "number") {
+    return <CountUp to={value} />;
+  }
+  return <>{value}</>;
 }
 
 function Arrow() {
@@ -139,10 +152,12 @@ function Arrow() {
   );
 }
 
-function HeroStat({ value, label }: { value: string; label: string }) {
+function HeroStat({ value, label }: { value: number | string; label: string }) {
   return (
     <div>
-      <dd className="font-mono text-3xl font-semibold tabnum text-foreground">{value}</dd>
+      <dd className="font-mono text-3xl font-semibold tabnum text-foreground">
+        <StatValue value={value} />
+      </dd>
       <dt className="mt-1.5 text-xs text-muted-foreground">{label}</dt>
     </div>
   );
@@ -151,7 +166,7 @@ function HeroStat({ value, label }: { value: string; label: string }) {
 function FeaturedCard({ market }: { market: Market }) {
   const p = market.prediction;
   return (
-    <div className="bezel">
+    <TiltCard className="bezel">
       <div className="bezel-core relative overflow-hidden p-7">
         <div className="pointer-events-none absolute -right-20 -top-20 h-52 w-52 glow-emerald" aria-hidden />
         <div className="flex items-center justify-between">
@@ -178,7 +193,7 @@ function FeaturedCard({ market }: { market: Market }) {
           <EdgeBar pMarket={market.probability} pModel={p?.p_model ?? null} />
         </div>
       </div>
-    </div>
+    </TiltCard>
   );
 }
 
@@ -192,11 +207,13 @@ function SectionHead({ eyebrow, title, note }: { eyebrow: string; title: string;
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
+function Stat({ label, value, sub }: { label: string; value: number | string; sub: string }) {
   return (
     <div>
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-2 font-mono text-3xl font-semibold tabnum text-foreground">{value}</div>
+      <div className="mt-2 font-mono text-3xl font-semibold tabnum text-foreground">
+        <StatValue value={value} />
+      </div>
       <div className="mt-1 text-xs text-muted-foreground">{sub}</div>
     </div>
   );

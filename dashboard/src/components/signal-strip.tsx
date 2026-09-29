@@ -10,7 +10,7 @@ function label(t: ArbitrageSignal["type"]): string {
 // Compact live feed of the most recent signals from both detectors.
 export function SignalStrip({ signals }: { signals: ArbitrageSignal[] }) {
   return (
-    <div className="panel flex h-full flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b border-border/80 px-4 py-2.5">
         <span className="frame-label">signal feed</span>
         <LiveDot label="live" />

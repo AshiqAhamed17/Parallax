@@ -35,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`dark ${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}
     >
       <body className="grain flex min-h-full flex-col">
+        <div className="aurora" aria-hidden />
         <DisclaimerBanner />
         <TopNav />
         <main className="mx-auto w-full max-w-7xl flex-1 px-5 py-10 sm:px-8">{children}</main>

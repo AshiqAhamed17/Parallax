@@ -5,8 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ------------------------------------------------------------------ *
- * Parallax — OLED-black "ethereal glass". Emerald signal accent, no
- * purple/cyan, no grid. Double-bezel hardware cards, film grain.
+ * Parallax — obsidian data terminal. Monochrome (obsidian/white/grey)
+ * with yellow + red signal accents. Alive: animated backdrop, spotlight
+ * cards, scroll reveals, live data motion. No green/cyan/purple, no grid.
  * ------------------------------------------------------------------ */
 @theme inline {
   --color-background: var(--background);
@@ -28,20 +29,22 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --color-emerald: var(--emerald);
-  --color-mint: var(--mint);
+  /* accent = amber-yellow; kept under emerald/mint names so components need no churn */
+  --color-emerald: var(--amber);
+  --color-mint: var(--amber-bright);
+  --color-amber: var(--amber);
   --color-crit: var(--status-crit);
   --color-high: var(--status-high);
   --color-med: var(--status-med);
-  --color-ok: var(--status-ok);
+  --color-ok: var(--amber-bright);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
 
-  --color-chart-1: var(--mint);
-  --color-chart-2: var(--emerald);
-  --color-chart-3: var(--status-high);
+  --color-chart-1: var(--amber-bright);
+  --color-chart-2: var(--amber);
+  --color-chart-3: var(--foreground);
   --color-chart-4: var(--status-crit);
-  --color-chart-5: #d6d3d1;
+  --color-chart-5: #a1a1aa;
 
   --font-display: var(--font-display);
   --font-sans: var(--font-sans-ui);
@@ -56,37 +59,36 @@
 
 :root,
 .dark {
-  --background: #050505;
-  --surface: #0c0d0c;
-  --surface-2: #131513;
-  --foreground: #f4f5f3;
+  --background: #08080a;
+  --surface: #121214;
+  --surface-2: #1a1a1d;
+  --foreground: #f6f6f7;
 
-  --card: #0a0b0a;
-  --card-foreground: #f4f5f3;
-  --popover: #0c0d0c;
-  --popover-foreground: #f4f5f3;
+  --card: #0e0e10;
+  --card-foreground: #f6f6f7;
+  --popover: #121214;
+  --popover-foreground: #f6f6f7;
 
-  --primary: #10b981;
-  --primary-foreground: #04140d;
-  --secondary: #131513;
-  --secondary-foreground: #f4f5f3;
-  --muted: #131513;
-  --muted-foreground: #8b8f8a;
-  --accent: #131513;
-  --accent-foreground: #f4f5f3;
+  --primary: #eab308;
+  --primary-foreground: #17140a;
+  --secondary: #1a1a1d;
+  --secondary-foreground: #f6f6f7;
+  --muted: #1a1a1d;
+  --muted-foreground: #9a9aa2;
+  --accent: #1a1a1d;
+  --accent-foreground: #f6f6f7;
 
-  --destructive: #f0576f;
+  --destructive: #ef4444;
   --border: rgba(255, 255, 255, 0.08);
   --input: rgba(255, 255, 255, 0.12);
-  --ring: #34d399;
+  --ring: #facc15;
   --radius: 1.25rem;
 
-  --emerald: #10b981;
-  --mint: #34d399;
-  --status-crit: #f0576f;
-  --status-high: #f59e6b;
-  --status-med: #e6c34a;
-  --status-ok: #34d399;
+  --amber: #eab308;
+  --amber-bright: #facc15;
+  --status-crit: #ef4444;
+  --status-high: #f59e0b;
+  --status-med: #eab308;
 }
 
 @layer base {
@@ -95,10 +97,7 @@
   }
   body {
     @apply text-foreground;
-    background:
-      radial-gradient(60% 42% at 80% 0%, rgba(16, 185, 129, 0.12), transparent 60%),
-      radial-gradient(46% 34% at 6% 22%, rgba(52, 211, 153, 0.06), transparent 60%),
-      #050505;
+    background: #08080a;
     font-size: 16.5px;
     letter-spacing: -0.005em;
   }
@@ -117,21 +116,70 @@
   }
 }
 
-/* Heavy fade-up + blur entrance (premium scroll-reveal feel), pure CSS so always visible at rest. */
-@keyframes reveal-in {
+/* --- Animated backdrop: two slow-drifting soft glows (grey + faint amber). No grid. --- */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.aurora::before,
+.aurora::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+}
+.aurora::before {
+  width: 55vw;
+  height: 55vw;
+  top: -18vw;
+  right: -8vw;
+  background: radial-gradient(circle, rgba(234, 179, 8, 0.1), transparent 62%);
+  animation: drift-a 26s ease-in-out infinite alternate;
+}
+.aurora::after {
+  width: 48vw;
+  height: 48vw;
+  bottom: -16vw;
+  left: -10vw;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 62%);
+  animation: drift-b 32s ease-in-out infinite alternate;
+}
+@keyframes drift-a {
   from {
-    opacity: 0;
-    transform: translateY(22px);
-    filter: blur(6px);
+    transform: translate3d(0, 0, 0) scale(1);
   }
   to {
-    opacity: 1;
-    transform: none;
-    filter: blur(0);
+    transform: translate3d(-8vw, 10vh, 0) scale(1.18);
   }
 }
-.reveal {
-  animation: reveal-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+@keyframes drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(9vw, -8vh, 0) scale(1.22);
+  }
+}
+
+/* Scroll-reveal (driven by IntersectionObserver toggling .reveal-in). */
+.reveal-item {
+  opacity: 0;
+  transform: translateY(26px);
+  filter: blur(8px);
+  transition:
+    opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.reveal-in {
+  opacity: 1;
+  transform: none;
+  filter: none;
 }
 
 @keyframes spark-draw {
@@ -145,7 +193,7 @@
   animation: spark-draw 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* Double-bezel (Doppelrand): a machined "tray + plate" enclosure for premium cards. */
+/* Double-bezel (tray + plate) premium enclosure. */
 .bezel {
   border-radius: var(--radius-2xl);
   padding: 0.375rem;
@@ -155,29 +203,61 @@
 }
 .bezel-core {
   border-radius: calc(var(--radius-2xl) - 0.375rem);
-  background: linear-gradient(180deg, #0d0f0d 0%, #080908 100%);
+  background: linear-gradient(180deg, #101012 0%, #0a0a0c 100%);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
 }
 
-/* Soft emerald ambient glow behind focal elements. */
-.glow-emerald {
+.panel {
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, #101012 0%, #0a0a0c 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
+    0 40px 90px -55px rgba(0, 0, 0, 0.9);
+}
+
+/* Cursor spotlight card: a radial highlight follows the pointer (vars set in JS). */
+.spotlight {
+  position: relative;
+  isolation: isolate;
+}
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    240px circle at var(--mx, 50%) var(--my, 0%),
+    rgba(250, 204, 21, 0.09),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  z-index: 0;
+  pointer-events: none;
+}
+.spotlight:hover::before {
+  opacity: 1;
+}
+
+.glow-emerald,
+.glow-amber {
   background: radial-gradient(
     50% 50% at 50% 45%,
-    rgba(16, 185, 129, 0.28) 0%,
-    rgba(52, 211, 153, 0.08) 45%,
+    rgba(234, 179, 8, 0.22) 0%,
+    rgba(250, 204, 21, 0.06) 45%,
     transparent 72%
   );
 }
 
-/* Film grain — fixed, pointer-events-none, over everything. Kills the flat digital look. */
 .grain::after {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 50;
   pointer-events: none;
-  opacity: 0.038;
+  opacity: 0.04;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -188,16 +268,6 @@
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--muted-foreground);
-}
-
-/* Single-layer glossy card (for secondary panels; hero showcases use the full .bezel). */
-.panel {
-  border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, #0d0f0d 0%, #080908 100%);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
-    0 40px 90px -55px rgba(0, 0, 0, 0.9);
 }
 
 @media (prefers-reduced-motion: reduce) {

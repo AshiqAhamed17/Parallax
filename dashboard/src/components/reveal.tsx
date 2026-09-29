@@ -1,8 +1,10 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-// CSS-based entrance so content is ALWAYS visible at rest (animation-fill-mode: both), even if JS
-// hasn't hydrated. Under prefers-reduced-motion the global rule zeroes the duration → instant.
+// Scroll-triggered reveal via native IntersectionObserver (reliable across setups): fades/slides/
+// blurs up when it enters the viewport. Elements already in view animate immediately on mount.
 export function Reveal({
   children,
   delay = 0,
@@ -12,8 +14,35 @@ export function Reveal({
   delay?: number;
   className?: string;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setShown(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShown(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -12% 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <div className={cn("reveal", className)} style={{ animationDelay: `${delay}s` }}>
+    <div
+      ref={ref}
+      className={cn("reveal-item", shown && "reveal-in", className)}
+      style={{ transitionDelay: `${delay}s` }}
+    >
       {children}
     </div>
   );
