@@ -27,9 +27,17 @@ export function MarketsExplorer({ markets }: { markets: Market[] }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("edge");
   const [filter, setFilter] = useState<Filter>("all");
+  const [cat, setCat] = useState<string>("all");
+
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const m of markets) if (m.category) counts.set(m.category, (counts.get(m.category) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [markets]);
 
   const rows = useMemo(() => {
     let r = markets;
+    if (cat !== "all") r = r.filter((m) => m.category === cat);
     if (query.trim()) {
       const q = query.toLowerCase();
       r = r.filter((m) => m.question_text.toLowerCase().includes(q));
@@ -47,6 +55,14 @@ export function MarketsExplorer({ markets }: { markets: Market[] }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* category chips */}
+      <div className="-mx-1 flex flex-wrap gap-2 overflow-x-auto px-1">
+        <CategoryChip label="All" count={markets.length} active={cat === "all"} onClick={() => setCat("all")} />
+        {categories.map(([c, n]) => (
+          <CategoryChip key={c} label={c} count={n} active={cat === c} onClick={() => setCat(c)} />
+        ))}
+      </div>
+
       {/* toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-xs">
@@ -99,6 +115,11 @@ export function MarketsExplorer({ markets }: { markets: Market[] }) {
                     <WatchlistToggle marketId={m.market_id} className="-ml-1 shrink-0" />
                     <span className={cn("size-1.5 shrink-0 rounded-full", dot)} aria-hidden />
                     <span className="truncate text-sm text-foreground">{m.question_text}</span>
+                    {m.category ? (
+                      <span className="hidden shrink-0 rounded-md bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-muted-foreground lg:inline">
+                        {m.category}
+                      </span>
+                    ) : null}
                   </span>
                   <span className="text-right font-mono text-sm font-medium tabnum text-amber">
                     {fmtProb(m.probability)}
@@ -135,6 +156,34 @@ export function MarketsExplorer({ markets }: { markets: Market[] }) {
         {rows.length} of {markets.length} markets
       </p>
     </div>
+  );
+}
+
+function CategoryChip({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm transition-colors",
+        active
+          ? "border-primary/40 bg-primary/15 text-amber"
+          : "border-white/10 bg-white/[0.02] text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {label}
+      <span className="font-mono text-[11px] tabnum opacity-60">{count}</span>
+    </button>
   );
 }
 

@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS markets (
     platform TEXT NOT NULL,
     question_text TEXT NOT NULL,
     close_time TEXT NOT NULL,
-    resolved_outcome INTEGER
+    resolved_outcome INTEGER,
+    category TEXT
 )
 """
 

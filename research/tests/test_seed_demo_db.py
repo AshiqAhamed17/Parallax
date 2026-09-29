@@ -31,6 +31,10 @@ def test_seed_populates_all_tables(tmp_path):
         assert pts >= 10, f"{m} has too few snapshots"
     types = {r[0] for r in conn.execute("SELECT DISTINCT type FROM arbitrage_signals").fetchall()}
     assert types == {"logical_constraint", "cross_source_divergence"}
+    # Markets span many categories (the dashboard filters on these).
+    cats = {r[0] for r in conn.execute("SELECT DISTINCT category FROM markets").fetchall()}
+    assert {"F1", "Football", "Crypto", "Tech"} <= cats
+    assert len(markets) >= 30
     conn.close()
 
 

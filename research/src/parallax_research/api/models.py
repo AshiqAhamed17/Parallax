@@ -38,6 +38,7 @@ class MarketOut(BaseModel):
     platform: str
     question_text: str
     close_time: str
+    category: str | None = None
     resolved_outcome: int | None = None
     #: Latest market-implied probability from `probability_snapshots` (None if none collected yet).
     probability: float | None = None

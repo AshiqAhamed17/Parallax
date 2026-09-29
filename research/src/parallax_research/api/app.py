@@ -155,6 +155,7 @@ def _market_from_row(conn: sqlite3.Connection, row: sqlite3.Row) -> MarketOut:
         platform=row["platform"],
         question_text=row["question_text"],
         close_time=row["close_time"],
+        category=row["category"],
         resolved_outcome=row["resolved_outcome"],
         probability=None if row["probability"] is None else float(row["probability"]),
         volume_24h=None if row["volume_24h"] is None else float(row["volume_24h"]),
@@ -178,7 +179,7 @@ def _signal_from_row(row: sqlite3.Row) -> ArbitrageSignalOut:
 # Each market joined to its single most-recent probability snapshot (LEFT JOIN so markets with no
 # snapshot yet still appear, with null probability/last_updated_ns).
 _MARKET_SELECT = """
-SELECT m.market_id, m.platform, m.question_text, m.close_time, m.resolved_outcome,
+SELECT m.market_id, m.platform, m.question_text, m.close_time, m.category, m.resolved_outcome,
        ps.probability AS probability, ps.volume_24h AS volume_24h, ps.ts_ns AS last_updated_ns
 FROM markets m
 LEFT JOIN probability_snapshots ps ON ps.id = (

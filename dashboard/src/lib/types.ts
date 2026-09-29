@@ -14,6 +14,7 @@ export interface Market {
   platform: string;
   question_text: string;
   close_time: string;
+  category: string | null;
   resolved_outcome: number | null;
   probability: number | null;
   volume_24h: number | null;
