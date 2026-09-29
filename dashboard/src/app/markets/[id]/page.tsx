@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EdgeBar } from "@/components/edge-bar";
 import { LiveDot } from "@/components/live-dot";
-import { ProbChart } from "@/components/prob-chart";
+import { ReplayScrubber } from "@/components/replay-scrubber";
 import { Reveal } from "@/components/reveal";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { StatusPill } from "@/components/status-pill";
@@ -70,7 +70,7 @@ export default async function MarketDetail({ params }: { params: Promise<{ id: s
               </div>
             </div>
             <div className="mt-7">
-              <ProbChart points={points} />
+              <ReplayScrubber points={points} />
             </div>
             <div className="mt-6 space-y-2.5">
               <div className="flex items-center justify-between text-xs text-muted-foreground">

@@ -346,6 +346,26 @@
   color: var(--muted-foreground);
 }
 
+/* Range scrubber thumb. */
+.scrubber::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--amber-bright);
+  border: 2px solid #0a0a0c;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.25);
+  cursor: pointer;
+}
+.scrubber::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--amber-bright);
+  border: 2px solid #0a0a0c;
+  cursor: pointer;
+}
+
 .eyebrow,
 .frame-label {
   font-family: var(--font-mono);
