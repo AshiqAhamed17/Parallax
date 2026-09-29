@@ -51,7 +51,7 @@ export function MarketsExplorer({ markets }: { markets: Market[] }) {
           ? (m.prediction?.ev ?? -Infinity)
           : Math.abs(m.prediction?.edge ?? -1);
     return [...r].sort((a, b) => val(b) - val(a));
-  }, [markets, query, sort, filter]);
+  }, [markets, cat, query, sort, filter]);
 
   return (
     <div className="flex flex-col gap-4">

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { EdgeBar } from "@/components/edge-bar";
 import { Sparkline } from "@/components/sparkline";
 import { WatchlistToggle } from "@/components/watchlist-toggle";
-import { fmtEdge, fmtEv, fmtProb } from "@/lib/format";
+import { fmtEdge, fmtProb } from "@/lib/format";
 import type { Market } from "@/lib/types";
 import { useWatchlist } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
