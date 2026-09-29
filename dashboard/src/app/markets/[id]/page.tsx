@@ -13,6 +13,12 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const market = await getMarket(id).catch(() => null);
+  return { title: market ? market.question_text.slice(0, 70) : "Market" };
+}
+
 export default async function MarketDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const market = await getMarket(id);

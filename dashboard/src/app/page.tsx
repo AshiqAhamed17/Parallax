@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CountUp } from "@/components/count-up";
 import { EdgeBar } from "@/components/edge-bar";
+import { HowItWorks } from "@/components/how-it-works";
 import { LiveDot } from "@/components/live-dot";
 import { MagneticButton } from "@/components/magnetic-button";
 import { MarketTerminal, type TerminalRow } from "@/components/market-terminal";
@@ -108,6 +109,8 @@ export default async function Home() {
           </SpotlightCard>
         </Reveal>
       </section>
+
+      <HowItWorks />
 
       {/* Signals + snapshot */}
       <section className="flex flex-col gap-7">

@@ -7,6 +7,11 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Signals",
+  description: "Logical-constraint violations and cross-source divergences. Informational only; never traded.",
+};
+
 const LIMIT = 10;
 const TABS: { key: "all" | SignalType; label: string }[] = [
   { key: "all", label: "All" },

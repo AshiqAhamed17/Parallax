@@ -5,6 +5,11 @@ import type { Market } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Markets",
+  description: "Every tracked Manifold market: live probability vs. the calibrated model, with edge and expected value.",
+};
+
 export default async function MarketsPage() {
   let markets: Market[] = [];
   try {

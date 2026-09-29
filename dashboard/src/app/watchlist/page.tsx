@@ -5,6 +5,11 @@ import type { Market } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Watchlist",
+  description: "Markets you have starred, saved in this browser only.",
+};
+
 export default async function WatchlistPage() {
   let markets: Market[] = [];
   try {

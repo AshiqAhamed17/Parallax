@@ -23,9 +23,13 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Parallax — low-latency prediction-market intelligence",
+  title: {
+    default: "Parallax — low-latency prediction-market intelligence",
+    template: "%s · Parallax",
+  },
   description:
     "A low-latency pipeline that watches Manifold's live bet stream, models calibrated probabilities, and detects logical-constraint and cross-source mispricings. Read-only; never trades.",
+  metadataBase: new URL("http://localhost:3000"),
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

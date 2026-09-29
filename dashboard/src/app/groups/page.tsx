@@ -6,6 +6,11 @@ import type { Group } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Correlated groups",
+  description: "Logically linked markets whose probabilities must obey an ordering — checked live for provable mispricings.",
+};
+
 export default async function GroupsPage() {
   let groups: Group[] = [];
   try {

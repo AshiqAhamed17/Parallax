@@ -5,6 +5,11 @@ import type { Report } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Performance",
+  description: "Measured latency percentiles and backtest P&L from real instrumented runs.",
+};
+
 function parseThroughput(reports: Report[]): number[] | null {
   for (const r of reports) {
     const m = r.content.match(
