@@ -15,7 +15,7 @@ export interface TerminalRow {
 // sparklines. Every row links to its market.
 export function MarketTerminal({ rows }: { rows: TerminalRow[] }) {
   return (
-    <div className="panel overflow-hidden">
+    <div className="bezel-core overflow-hidden">
       <div className="flex items-center justify-between border-b border-border/80 px-4 py-2.5">
         <div className="flex items-center gap-2">
           <span className="flex gap-1.5" aria-hidden>
@@ -47,13 +47,13 @@ export function MarketTerminal({ rows }: { rows: TerminalRow[] }) {
             <Link
               key={m.market_id}
               href={`/markets/${m.market_id}`}
-              className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-2.5 transition-colors hover:bg-violet/[0.04] md:grid-cols-[minmax(0,1fr)_5rem_6rem_5rem_5rem_6rem]"
+              className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-2.5 transition-colors hover:bg-emerald/[0.04] md:grid-cols-[minmax(0,1fr)_5rem_6rem_5rem_5rem_6rem]"
             >
               <span className="flex min-w-0 items-center gap-2.5">
                 <span className={cn("size-1.5 shrink-0 rounded-full", dot)} aria-hidden />
                 <span className="truncate text-sm text-foreground">{m.question_text}</span>
               </span>
-              <span className="text-right font-mono text-sm font-medium tabnum text-iris">
+              <span className="text-right font-mono text-sm font-medium tabnum text-mint">
                 {fmtProb(m.probability)}
               </span>
               <span className="hidden md:block">

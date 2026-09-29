@@ -5,8 +5,8 @@ export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <span className="relative flex h-4 w-4 items-end gap-[3px]" aria-hidden>
-        <span className="h-3 w-[3px] rounded-full bg-violet" />
-        <span className="h-4 w-[3px] translate-y-[-2px] rounded-full bg-iris" />
+        <span className="h-3 w-[3px] rounded-full bg-emerald" />
+        <span className="h-4 w-[3px] translate-y-[-2px] rounded-full bg-mint" />
       </span>
       <span className="text-[15px] font-semibold tracking-tight text-foreground">Parallax</span>
     </span>

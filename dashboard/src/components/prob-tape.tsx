@@ -19,7 +19,7 @@ export function ProbTape({ items }: { items: TapeItem[] }) {
     items.map((it, i) => (
       <span key={`${keyPrefix}-${i}`} className="mx-5 inline-flex items-center gap-2">
         <span className="max-w-[22ch] truncate text-muted-foreground">{it.question}</span>
-        <span className="font-mono tabnum text-iris">{fmtProb(it.probability)}</span>
+        <span className="font-mono tabnum text-mint">{fmtProb(it.probability)}</span>
       </span>
     ));
 

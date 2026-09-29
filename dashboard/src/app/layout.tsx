@@ -1,23 +1,23 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, IBM_Plex_Mono, Inter } from "next/font/google";
+import { JetBrains_Mono, Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { TopNav } from "@/components/top-nav";
 import "./globals.css";
 
-// Heavy, characterful display for headlines; Inter for dense UI text; Plex Mono for all data.
-const display = Bricolage_Grotesque({
+// Wide geometric grotesk for display; Plus Jakarta for UI; JetBrains Mono for all data.
+const display = Space_Grotesk({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["500", "600", "700"],
 });
 
-const sans = Inter({
+const sans = Plus_Jakarta_Sans({
   variable: "--font-sans-ui",
   subsets: ["latin"],
 });
 
-const mono = IBM_Plex_Mono({
-  variable: "--font-geist-mono",
+const mono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
 });

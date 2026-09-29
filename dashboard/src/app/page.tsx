@@ -32,50 +32,54 @@ export default async function Home() {
   ).length;
 
   return (
-    <div className="flex flex-col gap-16">
+    <div className="flex flex-col gap-28 pb-16 sm:gap-36">
       {/* Hero */}
-      <section className="relative isolate grid items-center gap-12 pt-6 lg:grid-cols-[1.02fr_0.98fr] lg:pt-10">
-        <div className="pointer-events-none absolute inset-x-0 -top-24 -z-10 h-[560px] grid-texture" aria-hidden />
-        <div className="pointer-events-none absolute -top-40 right-[-6%] -z-10 h-[620px] w-[680px] glow-violet" aria-hidden />
+      <section className="relative isolate grid items-center gap-14 pt-10 lg:grid-cols-[1.05fr_0.95fr] lg:pt-20">
+        <div className="pointer-events-none absolute -top-52 right-[-10%] -z-10 h-[720px] w-[720px] glow-emerald" aria-hidden />
 
         <div>
           <Reveal>
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-border bg-surface/60 px-3.5 py-1.5 font-mono text-xs text-muted-foreground">
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 backdrop-blur-sm">
               <LiveDot />
-              tracking {open.length} live markets · {signals.total} open signals
+              <span className="eyebrow !normal-case !tracking-wide text-muted-foreground">
+                tracking {open.length} live markets · {signals.total} open signals
+              </span>
             </div>
           </Reveal>
-          <Reveal delay={0.06}>
-            <h1 className="mt-6 text-6xl font-extrabold leading-[0.95] tracking-tight sm:text-7xl">
+          <Reveal delay={0.08}>
+            <h1 className="mt-7 text-[clamp(3rem,7vw,5.75rem)] font-semibold leading-[0.95] tracking-tight">
               Markets move fast.
               <br />
-              <span className="text-iris">Parallax</span> moves faster.
+              <span className="text-mint">Parallax</span> moves faster.
             </h1>
           </Reveal>
-          <Reveal delay={0.12}>
-            <p className="mt-7 max-w-[52ch] text-lg leading-relaxed text-muted-foreground">
+          <Reveal delay={0.16}>
+            <p className="mt-8 max-w-[50ch] text-lg leading-relaxed text-muted-foreground">
               A low-latency pipeline that watches Manifold&rsquo;s live bet stream, calibrates a
               probability for every market, and flags logical and cross-source mispricings.
             </p>
           </Reveal>
-          <Reveal delay={0.18}>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+          <Reveal delay={0.24}>
+            <div className="mt-10 flex flex-wrap items-center gap-3">
               <Link
                 href="/markets"
-                className="rounded-xl bg-primary px-5 py-3 text-base font-semibold text-primary-foreground shadow-[0_10px_40px_-10px_rgba(139,124,246,0.7)] transition-transform hover:-translate-y-0.5"
+                className="group flex items-center gap-3 rounded-full bg-primary py-2 pl-6 pr-2 text-base font-semibold text-primary-foreground shadow-[0_16px_50px_-12px_rgba(16,185,129,0.55)] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]"
               >
                 Explore markets
+                <span className="flex size-8 items-center justify-center rounded-full bg-black/15 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5">
+                  <Arrow />
+                </span>
               </Link>
               <Link
                 href="/performance"
-                className="rounded-xl border border-border px-5 py-3 text-base font-medium text-foreground transition-colors hover:border-violet/50"
+                className="rounded-full border border-white/12 px-6 py-3 text-base font-medium text-foreground transition-colors duration-500 hover:border-white/25 hover:bg-white/[0.03]"
               >
                 See measured latency
               </Link>
             </div>
           </Reveal>
-          <Reveal delay={0.24}>
-            <dl className="mt-10 flex gap-8">
+          <Reveal delay={0.32}>
+            <dl className="mt-14 flex gap-12">
               <HeroStat value={String(markets.length)} label="markets tracked" />
               <HeroStat value={fmtEdge(featured?.prediction?.edge ?? null)} label="top model edge" />
               <HeroStat value={String(signals.total)} label="live signals" />
@@ -83,10 +87,8 @@ export default async function Home() {
           </Reveal>
         </div>
 
-        {/* Featured-market spotlight — the product-as-art moment */}
-        <Reveal delay={0.28}>
-          {featured ? <FeaturedCard market={featured} /> : null}
-        </Reveal>
+        {/* Featured-market spotlight — the product-as-art moment (double-bezel) */}
+        <Reveal delay={0.28}>{featured ? <FeaturedCard market={featured} /> : null}</Reveal>
       </section>
 
       <Reveal>
@@ -94,21 +96,23 @@ export default async function Home() {
       </Reveal>
 
       {/* Full live terminal */}
-      <section className="flex flex-col gap-5">
-        <SectionHead title="Live markets" note="Market vs. calibrated model, updated as bets land." />
+      <section className="flex flex-col gap-7">
+        <SectionHead eyebrow="live markets" title="Market vs. calibrated model" note="Every tracked market, updated as bets land." />
         <Reveal>
-          <MarketTerminal rows={rows} />
+          <div className="bezel">
+            <MarketTerminal rows={rows} />
+          </div>
         </Reveal>
       </section>
 
       {/* Signals + snapshot */}
-      <section className="flex flex-col gap-5">
-        <SectionHead title="Signals & snapshot" note="Mispricings from both detectors, and the system at a glance." />
+      <section className="flex flex-col gap-7">
+        <SectionHead eyebrow="signals" title="Where the market is wrong" note="Mispricings from both detectors, and the system at a glance." />
         <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <SignalStrip signals={signals.items.slice(0, 6)} />
-          <div className="panel flex flex-col gap-6 p-6">
+          <div className="panel flex flex-col gap-7 p-7">
             <span className="frame-label">snapshot</span>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-7">
               <Stat label="Markets" value={String(markets.length)} sub={`${open.length} open`} />
               <Stat label="Top edge" value={fmtEdge(featured?.prediction?.edge ?? null)} sub="vs market" />
               <Stat label="Logical" value={String(nLogical)} sub="constraint breaks" />
@@ -116,7 +120,7 @@ export default async function Home() {
             </div>
             <Link
               href="/performance"
-              className="mt-auto rounded-xl border border-border px-4 py-3.5 text-sm text-muted-foreground transition-colors hover:border-violet/50 hover:text-foreground"
+              className="mt-auto rounded-2xl border border-white/10 px-5 py-4 text-sm text-muted-foreground transition-colors duration-500 hover:border-white/20 hover:text-foreground"
             >
               Measured latency and backtest P&amp;L, from real runs
             </Link>
@@ -127,11 +131,19 @@ export default async function Home() {
   );
 }
 
+function Arrow() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M3 11L11 3M11 3H5M11 3V9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function HeroStat({ value, label }: { value: string; label: string }) {
   return (
     <div>
-      <dd className="font-mono text-2xl font-semibold tabnum text-foreground">{value}</dd>
-      <dt className="mt-1 text-xs text-muted-foreground">{label}</dt>
+      <dd className="font-mono text-3xl font-semibold tabnum text-foreground">{value}</dd>
+      <dt className="mt-1.5 text-xs text-muted-foreground">{label}</dt>
     </div>
   );
 }
@@ -139,40 +151,43 @@ function HeroStat({ value, label }: { value: string; label: string }) {
 function FeaturedCard({ market }: { market: Market }) {
   const p = market.prediction;
   return (
-    <div className="panel relative overflow-hidden p-6">
-      <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 glow-violet" aria-hidden />
-      <div className="flex items-center justify-between">
-        <span className="frame-label">top signal</span>
-        <LiveDot label="live" />
-      </div>
-      <p className="mt-4 text-lg font-medium leading-snug text-foreground">{market.question_text}</p>
-      <div className="mt-5 flex items-end gap-4">
-        <span className="font-mono text-6xl font-semibold tabnum leading-none text-iris">
-          {fmtProb(market.probability)}
-        </span>
-        <span className="mb-1 rounded-lg bg-violet/15 px-2.5 py-1 font-mono text-sm tabnum text-iris ring-1 ring-inset ring-violet/30">
-          edge {fmtEdge(p?.edge ?? null)}
-        </span>
-      </div>
-      <div className="mt-5">
-        <Sparkline points={market.recent} width={520} height={120} fill className="w-full" />
-      </div>
-      <div className="mt-5 space-y-2">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>model vs. market</span>
-          <span className="font-mono tabnum">EV {fmtEv(p?.ev ?? null)}</span>
+    <div className="bezel">
+      <div className="bezel-core relative overflow-hidden p-7">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-52 w-52 glow-emerald" aria-hidden />
+        <div className="flex items-center justify-between">
+          <span className="eyebrow">top signal</span>
+          <LiveDot label="live" />
         </div>
-        <EdgeBar pMarket={market.probability} pModel={p?.p_model ?? null} />
+        <p className="mt-5 text-xl font-medium leading-snug text-foreground">{market.question_text}</p>
+        <div className="mt-6 flex items-end gap-4">
+          <span className="font-mono text-7xl font-semibold tabnum leading-none text-mint">
+            {fmtProb(market.probability)}
+          </span>
+          <span className="mb-1.5 rounded-full bg-emerald/12 px-3 py-1 font-mono text-sm tabnum text-mint ring-1 ring-inset ring-emerald/25">
+            edge {fmtEdge(p?.edge ?? null)}
+          </span>
+        </div>
+        <div className="mt-6">
+          <Sparkline points={market.recent} width={540} height={130} fill className="w-full" />
+        </div>
+        <div className="mt-6 space-y-2.5">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>model vs. market</span>
+            <span className="font-mono tabnum">EV {fmtEv(p?.ev ?? null)}</span>
+          </div>
+          <EdgeBar pMarket={market.probability} pModel={p?.p_model ?? null} />
+        </div>
       </div>
     </div>
   );
 }
 
-function SectionHead({ title, note }: { title: string; note: string }) {
+function SectionHead({ eyebrow, title, note }: { eyebrow: string; title: string; note: string }) {
   return (
-    <div className="flex flex-col gap-1">
-      <h2 className="text-2xl font-bold tracking-tight text-foreground">{title}</h2>
-      <p className="text-sm text-muted-foreground">{note}</p>
+    <div className="flex flex-col gap-2.5">
+      <span className="eyebrow">{eyebrow}</span>
+      <h2 className="text-3xl font-semibold tracking-tight text-foreground">{title}</h2>
+      <p className="max-w-[60ch] text-muted-foreground">{note}</p>
     </div>
   );
 }
@@ -181,7 +196,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub: string
   return (
     <div>
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1.5 font-mono text-3xl font-semibold tabnum text-foreground">{value}</div>
+      <div className="mt-2 font-mono text-3xl font-semibold tabnum text-foreground">{value}</div>
       <div className="mt-1 text-xs text-muted-foreground">{sub}</div>
     </div>
   );

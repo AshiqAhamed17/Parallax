@@ -24,14 +24,14 @@ export function SignalStrip({ signals }: { signals: ArbitrageSignal[] }) {
             return (
               <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
                 <span
-                  className={cn("size-1.5 shrink-0 rounded-full", logical ? "bg-violet" : "bg-low")}
+                  className={cn("size-1.5 shrink-0 rounded-full", logical ? "bg-emerald" : "bg-mint")}
                   aria-hidden
                 />
                 <span className="w-20 shrink-0 text-xs text-muted-foreground">{label(s.type)}</span>
                 <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground/90">
                   {s.market_refs.join("  ·  ")}
                 </span>
-                <span className="shrink-0 font-mono text-xs tabnum text-iris">
+                <span className="shrink-0 font-mono text-xs tabnum text-mint">
                   {s.edge >= 0 ? "+" : ""}
                   {s.edge.toFixed(3)}
                 </span>
@@ -42,7 +42,7 @@ export function SignalStrip({ signals }: { signals: ArbitrageSignal[] }) {
       </div>
       <Link
         href="/signals"
-        className="border-t border-border/80 px-4 py-2.5 text-xs text-muted-foreground transition-colors hover:text-iris"
+        className="border-t border-border/80 px-4 py-2.5 text-xs text-muted-foreground transition-colors hover:text-mint"
       >
         Open signal panel
       </Link>

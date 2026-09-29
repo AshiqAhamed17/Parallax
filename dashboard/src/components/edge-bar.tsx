@@ -34,7 +34,7 @@ export function EdgeBar({
       <div
         className={cn(
           "absolute top-0 h-full rounded-full",
-          positive ? "bg-violet/60" : "bg-high/60",
+          positive ? "bg-emerald/60" : "bg-high/60",
         )}
         style={{ left: `${lo * 100}%`, width: `${(hi - lo) * 100}%` }}
       />
@@ -47,7 +47,7 @@ export function EdgeBar({
       <div
         className={cn(
           "absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-background",
-          positive ? "bg-violet" : "bg-high",
+          positive ? "bg-emerald" : "bg-high",
         )}
         style={{ left: `${model * 100}%` }}
       />
