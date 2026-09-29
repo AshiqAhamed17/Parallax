@@ -6,6 +6,7 @@ import { ProbChart } from "@/components/prob-chart";
 import { Reveal } from "@/components/reveal";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { StatusPill } from "@/components/status-pill";
+import { WatchlistToggle } from "@/components/watchlist-toggle";
 import { getMarket, getReplay, getSignals } from "@/lib/api";
 import { fmtDate, fmtEdge, fmtEv, fmtProb } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -34,9 +35,12 @@ export default async function MarketDetail({ params }: { params: Promise<{ id: s
             ← markets
           </Link>
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <h1 className="max-w-[24ch] text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
-              {market.question_text}
-            </h1>
+            <div className="flex min-w-0 items-start gap-3">
+              <WatchlistToggle marketId={market.market_id} className="mt-1 shrink-0" />
+              <h1 className="max-w-[24ch] text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+                {market.question_text}
+              </h1>
+            </div>
             {resolved ? (
               <StatusPill status="neutral" label={`resolved ${market.resolved_outcome === 1 ? "YES" : "NO"}`} />
             ) : (

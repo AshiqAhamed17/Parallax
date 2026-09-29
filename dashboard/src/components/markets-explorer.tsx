@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { EdgeBar } from "@/components/edge-bar";
 import { Sparkline } from "@/components/sparkline";
+import { WatchlistToggle } from "@/components/watchlist-toggle";
 import { fmtEdge, fmtEv, fmtProb } from "@/lib/format";
 import type { Market } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -94,7 +95,8 @@ export function MarketsExplorer({ markets }: { markets: Market[] }) {
                   href={`/markets/${m.market_id}`}
                   className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-3 transition-colors hover:bg-white/[0.03] md:grid-cols-[minmax(0,1fr)_5rem_7rem_5rem_5rem_6rem]"
                 >
-                  <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <WatchlistToggle marketId={m.market_id} className="-ml-1 shrink-0" />
                     <span className={cn("size-1.5 shrink-0 rounded-full", dot)} aria-hidden />
                     <span className="truncate text-sm text-foreground">{m.question_text}</span>
                   </span>
