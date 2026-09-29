@@ -41,10 +41,22 @@ signaling quant-developer/low-latency-systems skill (not a trading bot, not a We
 | 11 — Backtester | 5/5 ✅ | 🟣 Opus |
 | 12 — Logical-Constraint Arbitrage | 4/4 ✅ | 🟣 Opus |
 | 13 — Public API Layer | 5/5 ✅ | 🔵 Sonnet (done on Opus per request) |
-| 14–16 | not started | mixed, see `tasks.md` |
+| 14 — Public Dashboard | 8/8 ✅ | 🔵 Sonnet (done on Opus per request) |
+| 15–16 | not started | mixed, see `tasks.md` |
 
-**Phases 12 and 13 complete. Next up: Phase 14 — Public Dashboard Frontend (Task 14.1, global layout
-+ disclaimer).** Note: the FastAPI app lives in `research/src/parallax_research/api/` (so it's covered
+**Dashboard design + how to run it (Phase 14):** obsidian-black + yellow/red "data terminal"
+aesthetic (Space Grotesk + Plus Jakarta Sans + JetBrains Mono), animated (scroll reveals via
+IntersectionObserver, cursor-spotlight/tilt cards, magnetic buttons, count-up, aurora backdrop).
+Taste guided by `.agents/skills/high-end-visual-design` (installed via `npx skills add`).
+**IMPORTANT: view/run with `npm run build && npm start` (or `npm run preview`), NOT `npm run dev`** —
+`next dev`'s HMR WebSocket is broken in this Next 16 setup and blocks hydration, so dev serves a dead
+static (non-animated) page. Production hydrates fine. Run the API first:
+`cd research && PARALLAX_DB=../data/parallax-demo.db PARALLAX_RATE_LIMIT_MAX=0 uv run uvicorn
+parallax_research.api.app:app --host 127.0.0.1 --port 8000`, then the dashboard with
+`NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`. Demo data via `research/scripts/seed_demo_db.py`.
+
+**Phases 12, 13, and 14 complete. Next up: Phase 15 — Deployment & Hosting (Task 15.1, containerize
+the collector).** Note: the FastAPI app lives in `research/src/parallax_research/api/` (so it's covered
 by the single `uv run ruff`/`pytest` from `research/`); `api/main.py` at repo root is a thin
 `uvicorn api.main:app` shim. `fastapi`+`uvicorn` are deps in `research/pyproject.toml`. Endpoints:
 `/health`, `/markets`, `/markets/{id}`, `/arbitrage` (paginated, both signal types), `/benchmarks`,
