@@ -56,6 +56,15 @@ export function TopNav() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Search markets"
+            onClick={() => window.dispatchEvent(new Event("parallax:open-command"))}
+            className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground sm:flex"
+          >
+            <span className="text-sm">Search</span>
+            <kbd className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-[10px]">⌘K</kbd>
+          </button>
           <div className="hidden items-center gap-2 rounded-full bg-white/[0.04] px-3 py-1.5 sm:flex">
             <LiveDot label="live" />
           </div>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
+import { AutoRefresh } from "@/components/auto-refresh";
+import { CommandPalette } from "@/components/command-palette";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { TopNav } from "@/components/top-nav";
 import "./globals.css";
@@ -40,6 +42,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="grain flex min-h-full flex-col">
         <div className="aurora" aria-hidden />
+        <CommandPalette />
+        <AutoRefresh />
         <DisclaimerBanner />
         <TopNav />
         <main className="mx-auto w-full max-w-7xl flex-1 px-5 py-10 sm:px-8">{children}</main>
