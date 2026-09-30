@@ -1,6 +1,6 @@
 import { Reveal } from "@/components/reveal";
 import { ReportView } from "@/components/report-view";
-import { getBacktests, getBenchmarks } from "@/lib/api";
+import { getBacktests, getBenchmarks, getCalibration } from "@/lib/api";
 import type { Report } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -23,8 +23,13 @@ function parseThroughput(reports: Report[]): number[] | null {
 export default async function PerformancePage() {
   let benchmarks: Report[] = [];
   let backtests: Report[] = [];
+  let calibration: Report[] = [];
   try {
-    [benchmarks, backtests] = await Promise.all([getBenchmarks(), getBacktests()]);
+    [benchmarks, backtests, calibration] = await Promise.all([
+      getBenchmarks(),
+      getBacktests(),
+      getCalibration(),
+    ]);
   } catch {
     // API unreachable
   }
@@ -61,7 +66,16 @@ export default async function PerformancePage() {
       <Reveal delay={0.1}>
         <ReportSection eyebrow="latency benchmarks" title="Ingestion pipeline" reports={benchmarks} />
       </Reveal>
-      <Reveal delay={0.14}>
+      {calibration.length > 0 ? (
+        <Reveal delay={0.14}>
+          <ReportSection
+            eyebrow="model calibration"
+            title="Model vs. market — measured honestly"
+            reports={calibration}
+          />
+        </Reveal>
+      ) : null}
+      <Reveal delay={0.18}>
         <ReportSection eyebrow="backtests" title="Strategy validation" reports={backtests} />
       </Reveal>
     </div>

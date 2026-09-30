@@ -78,3 +78,7 @@ export function getBenchmarks(): Promise<Report[]> {
 export function getBacktests(): Promise<Report[]> {
   return request<Report[]>("/backtests");
 }
+
+export function getCalibration(): Promise<Report[]> {
+  return request<Report[]>("/calibration");
+}

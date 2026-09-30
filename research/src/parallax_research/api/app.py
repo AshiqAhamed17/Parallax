@@ -432,6 +432,11 @@ def create_app(
         # Backtest reports (Phases 11/12); calibration and other reports are excluded by the filter.
         return _read_reports(resolved_reports, _is_backtest_report)
 
+    @app.get("/calibration", response_model=list[ReportOut])
+    def list_calibration() -> list[ReportOut]:
+        # Calibration reports (Phase LD): the honest model-vs-market Brier/log-loss/ECE comparison.
+        return _read_reports(resolved_reports, lambda name: "calibration" in name)
+
     return app
 
 
