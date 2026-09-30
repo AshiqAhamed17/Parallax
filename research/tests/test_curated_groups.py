@@ -19,6 +19,7 @@ def test_curated_config_validates():
         "btc-eoy-2026-thresholds",
         "agi-arrival-2027-deadlines",
         "vance-2028-nomination-presidency",
+        "sp500-eoy-2026-thresholds",
     ]
 
 
