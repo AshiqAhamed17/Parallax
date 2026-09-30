@@ -32,6 +32,7 @@ export interface ArbitrageSignal {
   edge: number;
   detected_at: string;
   details: Record<string, unknown>;
+  labels?: Record<string, string>;
 }
 
 export interface PaginatedSignals {

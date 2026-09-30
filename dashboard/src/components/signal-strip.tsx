@@ -28,8 +28,8 @@ export function SignalStrip({ signals }: { signals: ArbitrageSignal[] }) {
                   aria-hidden
                 />
                 <span className="w-20 shrink-0 text-xs text-muted-foreground">{label(s.type)}</span>
-                <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground/90">
-                  {s.market_refs.join("  ·  ")}
+                <span className="min-w-0 flex-1 truncate text-xs text-foreground/90">
+                  {s.market_refs.map((r) => s.labels?.[r] ?? (r.startsWith("0x") ? "Polymarket" : r)).join("  ·  ")}
                 </span>
                 <span className="shrink-0 font-mono text-xs tabnum text-mint">
                   {s.edge >= 0 ? "+" : ""}

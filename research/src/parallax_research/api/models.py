@@ -62,6 +62,9 @@ class ArbitrageSignalOut(BaseModel):
     detected_at: str
     #: Detector-specific payload (parsed from the stored `details_json`).
     details: dict[str, Any]
+    #: Human-readable question text per resolvable market ref (id → question). Refs with no market
+    #: row (e.g. a Polymarket conditionId) are omitted.
+    labels: dict[str, str] = {}
 
 
 class PaginatedSignals(BaseModel):

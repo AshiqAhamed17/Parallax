@@ -176,14 +176,26 @@ def _market_from_row(conn: sqlite3.Connection, row: sqlite3.Row) -> MarketOut:
     )
 
 
-def _signal_from_row(row: sqlite3.Row) -> ArbitrageSignalOut:
+def _signal_from_row(row: sqlite3.Row, conn: sqlite3.Connection | None = None) -> ArbitrageSignalOut:
+    refs = json.loads(row["market_refs"])
+    # Resolve each ref to its market question so the dashboard shows readable titles, not raw ids.
+    # Refs not in the `markets` table (e.g. a Polymarket conditionId) simply get no label.
+    labels: dict[str, str] = {}
+    if conn is not None:
+        for ref in refs:
+            found = conn.execute(
+                "SELECT question_text FROM markets WHERE market_id = ?", (ref,)
+            ).fetchone()
+            if found is not None:
+                labels[ref] = found["question_text"]
     return ArbitrageSignalOut(
         id=int(row["id"]),
         type=row["type"],
-        market_refs=json.loads(row["market_refs"]),
+        market_refs=refs,
         edge=float(row["edge"]),
         detected_at=row["detected_at"],
         details=json.loads(row["details_json"]),
+        labels=labels,
     )
 
 
@@ -416,7 +428,7 @@ def create_app(
             [*params, limit, offset],
         ).fetchall()
         return PaginatedSignals(
-            items=[_signal_from_row(row) for row in rows],
+            items=[_signal_from_row(row, conn) for row in rows],
             total=int(total),
             limit=limit,
             offset=offset,

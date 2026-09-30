@@ -5,22 +5,32 @@ import { cn } from "@/lib/utils";
 const HIDE_KEYS = new Set(["note"]);
 
 // A signal from either detector, with its detail payload rendered as key/value chips.
+// Render a market ref as its question when we have one; otherwise a friendly fallback (a
+// Polymarket conditionId is a 0x… hash with no market row).
+function refLabel(ref: string, labels?: Record<string, string>): string {
+  const q = labels?.[ref];
+  if (q) return q;
+  if (ref.startsWith("0x")) return "Polymarket market";
+  return ref;
+}
+
 export function SignalCard({ signal }: { signal: ArbitrageSignal }) {
   const logical = signal.type === "logical_constraint";
   const note = typeof signal.details.note === "string" ? signal.details.note : null;
   const entries = Object.entries(signal.details).filter(([k]) => !HIDE_KEYS.has(k));
+  const title = signal.market_refs.map((r) => refLabel(r, signal.labels)).join("  ·  ");
 
   return (
     <div className="panel p-5">
       <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <span className={cn("size-2 rounded-full", logical ? "bg-amber" : "bg-white/70")} aria-hidden />
-          <span className="text-sm font-medium text-foreground">
-            {logical ? "Logical-constraint" : "Cross-source divergence"}
-          </span>
-          <span className="font-mono text-xs text-muted-foreground">
-            {signal.market_refs.join("  ·  ")}
-          </span>
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex items-center gap-2.5">
+            <span className={cn("size-2 rounded-full", logical ? "bg-amber" : "bg-white/70")} aria-hidden />
+            <span className="text-sm font-medium text-foreground">
+              {logical ? "Logical-constraint" : "Cross-source divergence"}
+            </span>
+          </div>
+          <span className="text-sm text-muted-foreground">{title}</span>
         </div>
         <span className="shrink-0 font-mono text-lg font-semibold tabnum text-amber">
           {signal.edge >= 0 ? "+" : ""}
