@@ -1,0 +1,21 @@
+# Curated Manifold ↔ Polymarket market matches (Task LD.7).
+#
+# Each pair is the SAME real-world event on both platforms, hand-verified — not a fuzzy topic
+# overlap. Only genuine same-event pairs may drive a cross-source divergence signal (constraint
+# §2.2); the loader confirms these into `market_matches` and the detector compares their live
+# probabilities.
+#
+# Honest coverage note: genuinely-matching events across the two platforms are rare (Manifold and
+# Polymarket phrase and slice most questions differently — e.g. "BTC above $X at close" vs "BTC dips
+# to $Y"), so this list is deliberately short. Adding a pair that isn't the identical event would
+# manufacture a fake divergence, which is exactly what we refuse to do.
+#
+# `polymarket_market_id` is the Gamma numeric market id; the loader resolves it to the conditionId
+# the poller/detector key on, and fetches the live price. Verified live 2026-09-30.
+matches:
+  - manifold_market_id: "wpdomi6nif"
+    polymarket_market_id: "561229"
+    label: "JD Vance wins the 2028 US Presidential Election"
+  - manifold_market_id: "ulm6rrplx5"
+    polymarket_market_id: "561974"
+    label: "JD Vance is the 2028 Republican presidential nominee"

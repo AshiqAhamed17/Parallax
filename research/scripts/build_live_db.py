@@ -21,6 +21,8 @@ from pathlib import Path
 import httpx
 import numpy as np
 
+from parallax_research.arbitrage.constraints import load_constraint_groups
+from parallax_research.arbitrage.logical_constraint import detect_and_persist_violations
 from parallax_research.calibration.dataset import extract_training_dataset
 from parallax_research.calibration.edge import evaluate_and_store
 from parallax_research.calibration.model import BaselineModel
@@ -29,9 +31,25 @@ from parallax_research.calibration.scoring import (
     expected_calibration_error,
 )
 from parallax_research.ingest.backfill import backfill_registry
+from parallax_research.ingest.cross_source import load_matches, sync_cross_source
 from parallax_research.ingest.training import backfill_training_corpus
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+_CONFIG_DIR = _REPO_ROOT / "research" / "config"
+
+
+def _run_detectors(live_conn: sqlite3.Connection, *, client: httpx.Client) -> None:
+    # Logical-constraint arbitrage over the curated correlated groups (Task LD.6).
+    config = load_constraint_groups(_CONFIG_DIR / "correlated_market_groups.yaml")
+    live_conn.execute("DELETE FROM arbitrage_signals WHERE type = 'logical_constraint'")
+    live_conn.commit()
+    n_logical = detect_and_persist_violations(live_conn, config)
+    print(f"  logical-constraint signals: {n_logical}")
+
+    # Cross-source Manifold↔Polymarket divergence (Task LD.7).
+    matches = load_matches(_CONFIG_DIR / "cross_source_matches.yaml")
+    result = sync_cross_source(live_conn, matches, client=client)
+    print(f"  cross-source: matches={result['matches']}  signals={result['signals']}")
 
 
 def _log_loss(y_true, y_prob) -> float:
@@ -124,6 +142,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", default="../data/parallax-live.db", help="SQLite path to build")
     parser.add_argument("--skip-model", action="store_true", help="skip model training/prediction")
+    parser.add_argument("--skip-signals", action="store_true", help="skip signal detectors")
     parser.add_argument("--train-markets", type=int, default=120, help="resolved markets to train on")
     args = parser.parse_args()
 
@@ -138,6 +157,9 @@ def main() -> None:
         )
         if not args.skip_model:
             _fit_and_store(conn, client=client, max_markets=args.train_markets)
+        if not args.skip_signals:
+            print("Running signal detectors …")
+            _run_detectors(conn, client=client)
     finally:
         client.close()
         conn.close()
