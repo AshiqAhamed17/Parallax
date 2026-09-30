@@ -32,9 +32,10 @@ from parallax_research.matching.repository import (
 )
 from parallax_research.schemas import NormalizedMarket
 
-# Surface divergences of ≥2pp. Below the 5pp default so the small-but-real gaps between two efficient
-# venues still register — each carries an explicit "not tradeable arbitrage" note when persisted.
-_THRESHOLD = 0.02
+# Surface divergences of ≥1pp. Well below the 5pp default because genuine same-event gaps between two
+# efficient venues are small; each is persisted with an explicit "not tradeable arbitrage" note, so
+# showing modest divergences is honest (informational), not an arbitrage claim.
+_THRESHOLD = 0.01
 
 
 def load_matches(path: str | Path) -> list[dict]:

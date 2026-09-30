@@ -19,3 +19,11 @@ matches:
   - manifold_market_id: "ulm6rrplx5"
     polymarket_market_id: "561974"
     label: "JD Vance is the 2028 Republican presidential nominee"
+  # Republican control of the Senate after the 2026 election — same event on both venues.
+  - manifold_market_id: "BpoEJNtlQoDBpfjBmK0y"
+    polymarket_market_id: "562794"
+    label: "Republicans control the Senate after the 2026 election"
+  # Gavin Newsom as the 2028 Democratic presidential nominee.
+  - manifold_market_id: "vrDkEvmgqw1VcmU4OgYF"
+    polymarket_market_id: "559652"
+    label: "Gavin Newsom is the 2028 Democratic presidential nominee"

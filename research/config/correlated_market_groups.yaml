@@ -29,6 +29,9 @@ groups:
       - key: gt_88888
         manifold_market_id: "2q2qZNLRlE"
         label: "BTC higher than $88,888 at the end of 2026"
+      - key: gt_150000
+        manifold_market_id: "0Nh2qNNuNR"
+        label: "BTC closes above $150,000 on December 31, 2026"
     constraints:
       - lhs: gt_77777
         op: "<="
@@ -38,6 +41,10 @@ groups:
         op: "<="
         rhs: gt_77777
         note: "BTC > $88,888 at EOY 2026 implies BTC > $77,777 at EOY 2026, so P(>88,888) <= P(>77,777)."
+      - lhs: gt_150000
+        op: "<="
+        rhs: gt_88888
+        note: "BTC > $150,000 at EOY 2026 implies BTC > $88,888 at EOY 2026, so P(>150,000) <= P(>88,888)."
 
   # ---------------------------------------------------------------------------------------------
   # Group 2 — AGI arrival deadlines (temporal nesting).
@@ -99,3 +106,34 @@ groups:
         op: "<="
         rhs: nominated
         note: "Winning the presidency implies being nominated, so P(wins presidency) <= P(nominated)."
+
+  # ---------------------------------------------------------------------------------------------
+  # Group 4 — S&P 500 end-of-2026 close thresholds (magnitude nesting).
+  # One underlying (the S&P 500's December 31, 2026 close) sliced at rising thresholds. Closing
+  # above a higher level implies closing above every lower one, so P must be monotonically
+  # non-increasing as the threshold rises. All three resolve on the same date (verified: identical
+  # close time).
+  # ---------------------------------------------------------------------------------------------
+  - id: sp500-eoy-2026-thresholds
+    description: >-
+      The S&P 500's end-of-2026 close sliced at three rising levels. Closing above a higher level
+      implies closing above every lower one, so P must fall as the threshold rises.
+    markets:
+      - key: ge_6850
+        manifold_market_id: "htIqzhS2Zn"
+        label: "S&P 500 finishes 2026 at 6850 or higher"
+      - key: gt_7500
+        manifold_market_id: "hISQySnLnu"
+        label: "S&P 500 closes above 7,500 at the end of 2026"
+      - key: gt_7883
+        manifold_market_id: "nPhdNdqI6S"
+        label: "S&P 500 closes above 7883.34 on December 31, 2026"
+    constraints:
+      - lhs: gt_7500
+        op: "<="
+        rhs: ge_6850
+        note: "S&P closing above 7,500 implies finishing at >= 6850, so P(>7500) <= P(>=6850)."
+      - lhs: gt_7883
+        op: "<="
+        rhs: gt_7500
+        note: "S&P closing above 7883.34 implies closing above 7,500, so P(>7883) <= P(>7500)."

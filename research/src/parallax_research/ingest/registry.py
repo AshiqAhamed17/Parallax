@@ -54,6 +54,14 @@ _PINNED: tuple[tuple[str, str], ...] = (
     # JD Vance 2028
     ("ulm6rrplx5", "Politics"),
     ("wpdomi6nif", "Politics"),
+    # Gavin Newsom 2028 Democratic nominee (cross-source pair with Polymarket)
+    ("vrDkEvmgqw1VcmU4OgYF", "Politics"),
+    # S&P 500 end-of-2026 close thresholds (correlated group)
+    ("htIqzhS2Zn", "Macro"),
+    ("hISQySnLnu", "Macro"),
+    ("nPhdNdqI6S", "Macro"),
+    # Bitcoin $150k end-of-2026 close (extends the BTC threshold ladder)
+    ("0Nh2qNNuNR", "Crypto"),
 )
 
 # Skip obvious junk that liquidity ranking can still surface (meme/scam-token markets, etc.).
