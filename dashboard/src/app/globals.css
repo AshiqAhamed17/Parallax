@@ -390,3 +390,202 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ───────────────────────── Docs (/docs) prose ───────────────────────── */
+.doc-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--amber-bright);
+  margin-bottom: 0.9rem;
+}
+.doc-prose {
+  color: var(--muted-foreground);
+  font-size: 0.975rem;
+  line-height: 1.75;
+  max-width: 48rem;
+}
+.doc-prose h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 1rem;
+}
+.doc-prose .doc-lead {
+  font-size: 1.12rem;
+  line-height: 1.65;
+  color: color-mix(in srgb, var(--foreground) 82%, transparent);
+  margin-bottom: 2.5rem;
+}
+.doc-prose h2 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+  scroll-margin-top: 7rem;
+}
+.doc-prose h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  scroll-margin-top: 7rem;
+}
+.doc-prose p {
+  margin-bottom: 1.15rem;
+}
+.doc-prose strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.doc-prose a {
+  color: var(--amber-bright);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--amber-bright) 35%, transparent);
+  transition: border-color 0.2s;
+}
+.doc-prose a:hover {
+  border-bottom-color: var(--amber-bright);
+}
+.doc-prose ul,
+.doc-prose ol {
+  margin: 0 0 1.25rem 0;
+  padding-left: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.doc-prose ul {
+  list-style: none;
+  padding-left: 0.2rem;
+}
+.doc-prose ul > li {
+  position: relative;
+  padding-left: 1.4rem;
+}
+.doc-prose ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  top: 0.72em;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--amber);
+}
+.doc-prose ol {
+  list-style: decimal;
+}
+.doc-prose li {
+  line-height: 1.65;
+}
+.doc-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0.12rem 0.38rem;
+  color: var(--amber-bright);
+}
+.doc-prose pre {
+  background: #0b0b0d;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.doc-prose pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: color-mix(in srgb, var(--foreground) 90%, transparent);
+  font-size: inherit;
+}
+.doc-prose blockquote {
+  border-left: 2px solid var(--amber);
+  padding: 0.25rem 0 0.25rem 1.1rem;
+  margin: 0 0 1.5rem 0;
+  color: color-mix(in srgb, var(--foreground) 75%, transparent);
+}
+.doc-prose hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2.5rem 0;
+}
+.doc-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  display: block;
+  overflow-x: auto;
+}
+.doc-prose th,
+.doc-prose td {
+  text-align: left;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.doc-prose th {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.doc-prose td {
+  color: color-mix(in srgb, var(--foreground) 85%, transparent);
+}
+.doc-prose .doc-note {
+  border: 1px solid color-mix(in srgb, var(--amber) 30%, transparent);
+  background: color-mix(in srgb, var(--amber) 7%, transparent);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.5rem;
+}
+.doc-prose .doc-note p:last-child {
+  margin-bottom: 0;
+}
+/* prev/next pager */
+.doc-pager {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  max-width: 48%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.1rem;
+  transition: border-color 0.2s, background 0.2s;
+}
+.doc-pager:hover {
+  border-color: color-mix(in srgb, var(--amber) 40%, transparent);
+  background: var(--surface);
+}
+.doc-pager-next {
+  text-align: right;
+}
+.doc-pager-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+}
+.doc-pager-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
